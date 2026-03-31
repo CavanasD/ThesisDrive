@@ -99,6 +99,11 @@ const avatarImageUrl = ref('')
 const avatarFileInput = ref(null)
 const showAvatarCropModal = ref(false)
 const avatarLoading = ref(false)
+const AVATAR_CACHE_PREFIX = 'thesis-avatar-cache:'
+const AVATAR_DB_NAME = 'thesis-avatar-cache-db'
+const AVATAR_DB_STORE = 'avatars'
+const avatarMemoryCache = new Map()
+let avatarLoadingPromise = null
 
 const avatarDraft = reactive({
   sourceUrl: '',
@@ -410,25 +415,167 @@ const revokeUrl = (value) => {
   }
 }
 
+const openAvatarDb = () =>
+  new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      resolve(null)
+      return
+    }
+
+    const request = indexedDB.open(AVATAR_DB_NAME, 1)
+
+    request.onupgradeneeded = () => {
+      const db = request.result
+      if (!db.objectStoreNames.contains(AVATAR_DB_STORE)) {
+        db.createObjectStore(AVATAR_DB_STORE)
+      }
+    }
+
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error || new Error('头像缓存数据库打开失败'))
+  })
+
+const idbGetAvatarBlob = async (key) => {
+  const db = await openAvatarDb()
+  if (!db) return null
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(AVATAR_DB_STORE, 'readonly')
+    const store = tx.objectStore(AVATAR_DB_STORE)
+    const req = store.get(key)
+
+    req.onsuccess = () => {
+      const value = req.result
+      resolve(value instanceof Blob ? value : null)
+    }
+    req.onerror = () => reject(req.error || new Error('读取头像缓存失败'))
+  }).finally(() => {
+    db.close()
+  })
+}
+
+const idbSetAvatarBlob = async (key, blob) => {
+  const db = await openAvatarDb()
+  if (!db) return
+
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(AVATAR_DB_STORE, 'readwrite')
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error || new Error('写入头像缓存失败'))
+    tx.objectStore(AVATAR_DB_STORE).put(blob, key)
+  }).finally(() => {
+    db.close()
+  })
+}
+
+const idbDeleteByPrefix = async (prefix, keepKey = '') => {
+  const db = await openAvatarDb()
+  if (!db) return
+
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(AVATAR_DB_STORE, 'readwrite')
+    const store = tx.objectStore(AVATAR_DB_STORE)
+    const cursorReq = store.openCursor()
+
+    cursorReq.onsuccess = () => {
+      const cursor = cursorReq.result
+      if (!cursor) return
+      const key = String(cursor.key || '')
+      if (key.startsWith(prefix) && key !== keepKey) {
+        cursor.delete()
+      }
+      cursor.continue()
+    }
+
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error || new Error('清理头像缓存失败'))
+  }).finally(() => {
+    db.close()
+  })
+}
+
+const avatarCacheKey = () => {
+  if (!session.username || !session.avatarId) return ''
+  return `${AVATAR_CACHE_PREFIX}${session.username}:${session.avatarId}`
+}
+
+const clearAvatarCacheByUser = (username, keepKey = '') => {
+  if (!username) return
+  const prefix = `${AVATAR_CACHE_PREFIX}${username}:`
+
+  for (const key of Array.from(avatarMemoryCache.keys())) {
+    if (key.startsWith(prefix) && key !== keepKey) {
+      avatarMemoryCache.delete(key)
+    }
+  }
+
+  for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+    const key = localStorage.key(i)
+    if (key && key.startsWith(prefix) && key !== keepKey) {
+      localStorage.removeItem(key)
+    }
+  }
+
+  runSafe(async () => {
+    await idbDeleteByPrefix(prefix, keepKey)
+  })
+}
+
+const loadAvatarFromCache = async () => {
+  const key = avatarCacheKey()
+  if (!key) return false
+
+  const memBlob = avatarMemoryCache.get(key)
+  if (memBlob instanceof Blob) {
+    applyAvatarUrl(URL.createObjectURL(memBlob))
+    return true
+  }
+
+  try {
+    const dbBlob = await idbGetAvatarBlob(key)
+    if (dbBlob) {
+      avatarMemoryCache.set(key, dbBlob)
+      applyAvatarUrl(URL.createObjectURL(dbBlob))
+      return true
+    }
+  } catch {
+    // Ignore IndexedDB read errors and fallback to localStorage compatibility cache.
+  }
+
+  const dataUrl = localStorage.getItem(key)
+  if (!dataUrl) return false
+  applyAvatarUrl(dataUrl)
+  return true
+}
+
+const blobToDataUrl = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error('头像缓存转换失败'))
+    reader.readAsDataURL(blob)
+  })
+
+const saveAvatarToCache = async (blob) => {
+  const key = avatarCacheKey()
+  if (!key || !blob) return
+  clearAvatarCacheByUser(session.username, key)
+  avatarMemoryCache.set(key, blob)
+
+  try {
+    await idbSetAvatarBlob(key, blob)
+  } catch {
+    // Fallback to localStorage below.
+  }
+
+  const dataUrl = await blobToDataUrl(blob)
+  localStorage.setItem(key, dataUrl)
+}
+
 const applyAvatarUrl = (url) => {
   revokeUrl(avatarImageUrl.value)
   avatarImageUrl.value = url
 }
-
-const verifyBlobAsImage = (blob) =>
-  new Promise((resolve) => {
-    const tempUrl = URL.createObjectURL(blob)
-    const img = new Image()
-    img.onload = () => {
-      URL.revokeObjectURL(tempUrl)
-      resolve(true)
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(tempUrl)
-      resolve(false)
-    }
-    img.src = tempUrl
-  })
 
 const onAvatarImageError = () => {
   revokeUrl(avatarImageUrl.value)
@@ -458,59 +605,74 @@ const detectImageMime = (bytes) => {
 }
 
 const loadAvatarPreview = async () => {
+  const guardUsername = session.username
+  const guardAvatarId = session.avatarId
+
   if (!session.username) return
+  if (!session.avatarId) return
   if (avatarLoading.value) return
+  if (avatarLoadingPromise) return avatarLoadingPromise
 
-  avatarLoading.value = true
+  avatarLoadingPromise = (async () => {
+    avatarLoading.value = true
 
-  try {
-    const avatarResp = await callAction(
-      'get_user_avatar',
-      { username: session.username },
-      true,
-      false,
-    )
+    try {
+      const avatarResp = await callAction(
+        'get_user_avatar',
+        { username: session.username },
+        true,
+        false,
+      )
 
-    if (avatarResp.code >= 400) {
-      revokeUrl(avatarImageUrl.value)
-      avatarImageUrl.value = ''
-      return
+      if (avatarResp.code >= 400) {
+        revokeUrl(avatarImageUrl.value)
+        avatarImageUrl.value = ''
+        clearAvatarCacheByUser(session.username)
+        return
+      }
+
+      const taskId = avatarResp.data?.task_data?.task_id
+      if (!taskId) return
+
+      const { fileBytes } = await client.downloadFileByTask(taskId, {
+        strictIntegrity: false,
+        maxBytes: 1024 * 1024,
+      })
+      if (!fileBytes || !fileBytes.length) {
+        throw new Error('头像数据为空')
+      }
+
+      const mime = detectImageMime(fileBytes) || 'application/octet-stream'
+      const blob = new Blob([fileBytes], { type: mime })
+
+      if (session.username !== guardUsername || session.avatarId !== guardAvatarId) {
+        return
+      }
+
+      const objectUrl = URL.createObjectURL(blob)
+      applyAvatarUrl(objectUrl)
+      await saveAvatarToCache(blob)
+    } catch (error) {
+      // 保留旧头像，避免临时下载失败导致闪回默认字母。
+      pushLog(`头像加载失败: ${error?.message || 'unknown error'}`, 'warning')
+    } finally {
+      avatarLoading.value = false
+      avatarLoadingPromise = null
     }
+  })()
 
-    const taskId = avatarResp.data?.task_data?.task_id
-    if (!taskId) return
-
-    const { fileBytes } = await client.downloadFileByTask(taskId, {
-      strictIntegrity: false,
-      maxBytes: 2 * 1024 * 1024,
-    })
-    if (!fileBytes || !fileBytes.length) {
-      throw new Error('头像数据为空')
-    }
-
-    const mime = detectImageMime(fileBytes) || 'application/octet-stream'
-    const blob = new Blob([fileBytes], { type: mime })
-    const valid = await verifyBlobAsImage(blob)
-    if (!valid) {
-      throw new Error('头像数据损坏')
-    }
-
-    const objectUrl = URL.createObjectURL(blob)
-    applyAvatarUrl(objectUrl)
-  } catch (error) {
-    revokeUrl(avatarImageUrl.value)
-    avatarImageUrl.value = ''
-    pushLog(`头像加载失败: ${error?.message || 'unknown error'}`, 'warning')
-  } finally {
-    avatarLoading.value = false
-  }
+  return avatarLoadingPromise
 }
 
-const ensureAvatarLoaded = () => {
-  if (!session.username) return
-  if (avatarImageUrl.value) return
+const warmupAvatarInBackground = (delay = 360) => {
+  if (!session.username || !session.avatarId) return
   if (avatarLoading.value) return
-  runSafe(loadAvatarPreview)
+
+  setTimeout(() => {
+    runWhenIdle(() => {
+      runSafe(loadAvatarPreview)
+    }, 2200)
+  }, delay)
 }
 
 const openAvatarUpload = () => {
@@ -640,7 +802,11 @@ const submitAvatarUpload = async () => {
       true,
     )
 
-    await runSafe(loadAvatarPreview)
+    const refreshed = await callAction('get_user_info', { username: session.username }, true)
+    session.avatarId = refreshed.data?.avatar_id || session.avatarId
+    await saveAvatarToCache(blob)
+
+    // 上传后先用本地预览图，不在这里触发下载解密，避免页面卡顿。
     closeAvatarCrop()
     pushToast('头像已更新并同步', 'success')
   })
@@ -698,9 +864,13 @@ const handleLogin = async () => {
     pushLog('登录成功', 'success')
     pushToast('登录成功', 'success')
 
-    runWhenIdle(() => {
-      ensureAvatarLoaded()
-    }, 4000)
+    runSafe(async () => {
+      const loadedFromCache = await loadAvatarFromCache()
+      if (!loadedFromCache) {
+        warmupAvatarInBackground(220)
+      }
+    })
+
   })
 }
 
@@ -893,13 +1063,14 @@ const changeTab = async (tab) => {
     await runSafe(loadRecycle)
   } else if (tab === 'profile') {
     await runSafe(loadProfileSettings)
-    ensureAvatarLoaded()
-  } else if (tab === 'dashboard') {
-    ensureAvatarLoaded()
+    if (!avatarImageUrl.value) {
+      warmupAvatarInBackground(120)
+    }
   }
 }
 
 const logout = () => {
+  const previousUsername = session.username
   session.username = ''
   session.token = ''
   session.nickname = ''
@@ -911,6 +1082,7 @@ const logout = () => {
   selectedRecentFileId.value = ''
   revokeUrl(avatarImageUrl.value)
   avatarImageUrl.value = ''
+  clearAvatarCacheByUser(previousUsername)
   closeAvatarCrop()
   showLogModal.value = false
   loginStage.need2fa = false

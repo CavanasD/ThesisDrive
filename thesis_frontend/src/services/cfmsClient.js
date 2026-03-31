@@ -424,11 +424,10 @@ export class CfmsClient {
       ]
       : [
        () => decryptCfb8Manual(encryptedAll, keyWordArray, base64ToBytes(ivBase64)),
-       () => decryptAesCfb(cipherWordArray, keyWordArray, ivWordArray, 8),
       ]
     let decryptedBytes = null
     let fallbackBytes = null
-
+    
     for (const runStrategy of strategies) {
       try {
         const candidate = runStrategy()
