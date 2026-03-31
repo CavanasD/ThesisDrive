@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { CfmsClient } from './services/cfmsClient'
 
 import navDashboardIcon from './assets/icons/nav/dashboard.svg'
@@ -104,6 +104,8 @@ const AVATAR_DB_NAME = 'thesis-avatar-cache-db'
 const AVATAR_DB_STORE = 'avatars'
 const avatarMemoryCache = new Map()
 let avatarLoadingPromise = null
+const servicePillCollapsed = ref(false)
+let servicePillTimer = null
 
 const avatarDraft = reactive({
   sourceUrl: '',
@@ -305,11 +307,23 @@ const pushToast = (text, type = 'info') => {
 
 const authHeader = () => ({ username: session.username, token: session.token })
 
+const expandServicePillThenAutoCollapse = () => {
+  servicePillCollapsed.value = false
+  if (servicePillTimer) {
+    clearTimeout(servicePillTimer)
+  }
+
+  servicePillTimer = setTimeout(() => {
+    servicePillCollapsed.value = true
+  }, 7000)
+}
+
 const client = new CfmsClient({
   url: wsUrl.value,
   onConnectionState: (state) => {
     if (isConnected.value !== state.connected) {
       isConnected.value = state.connected
+      expandServicePillThenAutoCollapse()
       if (state.connected) {
         pushLog('连接成功', 'success')
         pushToast('连接成功', 'success')
@@ -1099,10 +1113,17 @@ const runSafe = async (fn) => {
 }
 
 onMounted(() => {
+  expandServicePillThenAutoCollapse()
   runSafe(async () => {
     await connectWs()
     await loadServerInfo()
   })
+})
+
+onBeforeUnmount(() => {
+  if (servicePillTimer) {
+    clearTimeout(servicePillTimer)
+  }
 })
 </script>
 
@@ -1488,9 +1509,9 @@ onMounted(() => {
 
     <button class="log-fab" @click="showLogModal = true" aria-label="查看日志">🛎</button>
 
-    <div class="service-pill left" :class="{ online: isConnected, offline: !isConnected }">
+    <div class="service-pill left" :class="{ online: isConnected, offline: !isConnected, collapsed: servicePillCollapsed }">
       <span class="dot"></span>
-      <span>{{ isConnected ? 'Service Online' : 'Service Offline' }}</span>
+      <span class="service-label">{{ isConnected ? 'Service Online' : 'Service Offline' }}</span>
     </div>
 
     <div v-if="showLogModal" class="overlay" @click.self="showLogModal = false">
