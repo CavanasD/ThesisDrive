@@ -1070,7 +1070,6 @@ const changeTab = async (tab) => {
 }
 
 const logout = () => {
-  const previousUsername = session.username
   session.username = ''
   session.token = ''
   session.nickname = ''
@@ -1082,7 +1081,6 @@ const logout = () => {
   selectedRecentFileId.value = ''
   revokeUrl(avatarImageUrl.value)
   avatarImageUrl.value = ''
-  clearAvatarCacheByUser(previousUsername)
   closeAvatarCrop()
   showLogModal.value = false
   loginStage.need2fa = false
