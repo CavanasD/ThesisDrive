@@ -1,0 +1,6 @@
+[submodule "src/certtools"]
+	path = src/certtools
+	url = https://github.com/cfms-dev/certtools.git
+[submodule "src/content/ssl/client"]
+	path = src/content/ssl/client
+	url = https://github.com/cfms-dev/ca.git
