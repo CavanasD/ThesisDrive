@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { CfmsClient } from './services/cfmsClient'
+import { CfmsClient } from './services/cfmsClient_Confused'
 
 import navDashboardIcon from './assets/icons/nav/dashboard.svg'
 import navFilesIcon from './assets/icons/nav/files.svg'
