@@ -1,0 +1,3 @@
+[submodule "cfms_on_websocket-master"]
+	path = cfms_on_websocket-master
+	url = https://github.com/Creeper19472/cfms_on_websocket.git
