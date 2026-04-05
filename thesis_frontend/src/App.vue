@@ -99,6 +99,8 @@ const avatarImageUrl = ref('')
 const avatarFileInput = ref(null)
 const showAvatarCropModal = ref(false)
 const avatarLoading = ref(false)
+const THEME_MODE_KEY = 'thesis-theme-mode'
+const themeMode = ref('light')
 const AVATAR_CACHE_PREFIX = 'thesis-avatar-cache:'
 const AVATAR_DB_NAME = 'thesis-avatar-cache-db'
 const AVATAR_DB_STORE = 'avatars'
@@ -134,6 +136,7 @@ const twoFaState = reactive({
 
 const dashboardUsedBytes = computed(() => Math.round((drive.totalBytes * dashboardUsagePercent.value) / 100))
 const dashboardRemainingBytes = computed(() => Math.max(0, drive.totalBytes - dashboardUsedBytes.value))
+const isDarkMode = computed(() => themeMode.value === 'dark')
 const ringRadius = 42
 const ringLength = computed(() => 2 * Math.PI * ringRadius)
 const ringOffset = computed(() => ringLength.value * (1 - dashboardUsagePercent.value / 100))
@@ -306,6 +309,32 @@ const pushToast = (text, type = 'info') => {
 }
 
 const authHeader = () => ({ username: session.username, token: session.token })
+
+const setThemeMode = (mode) => {
+  const next = mode === 'dark' ? 'dark' : 'light'
+  themeMode.value = next
+  localStorage.setItem(THEME_MODE_KEY, next)
+}
+
+const toggleThemeMode = (event) => {
+  const next = isDarkMode.value ? 'light' : 'dark'
+
+  const fallbackX = window.innerWidth - 34
+  const fallbackY = window.innerHeight - 34
+  const x = event?.clientX ?? fallbackX
+  const y = event?.clientY ?? fallbackY
+  document.documentElement.style.setProperty('--theme-reveal-x', `${x}px`)
+  document.documentElement.style.setProperty('--theme-reveal-y', `${y}px`)
+
+  if (document.startViewTransition) {
+    document.startViewTransition(() => {
+      setThemeMode(next)
+    })
+    return
+  }
+
+  setThemeMode(next)
+}
 
 const expandServicePillThenAutoCollapse = () => {
   servicePillCollapsed.value = false
@@ -1113,6 +1142,11 @@ const runSafe = async (fn) => {
 }
 
 onMounted(() => {
+  const savedThemeMode = localStorage.getItem(THEME_MODE_KEY)
+  if (savedThemeMode === 'dark' || savedThemeMode === 'light') {
+    themeMode.value = savedThemeMode
+  }
+
   expandServicePillThenAutoCollapse()
   runSafe(async () => {
     await connectWs()
@@ -1128,7 +1162,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="page">
+  <div class="page" :class="{ 'theme-dark': isDarkMode }">
     <div class="bg-glow"></div>
 
     <Transition name="shell-switch" mode="out-in">
@@ -1491,6 +1525,14 @@ onBeforeUnmount(() => {
             <p>Token 到期：{{ formatDateTime(session.exp) }}</p>
             <p>权限数量：{{ session.permissions.length }}</p>
             <p>所在组：{{ session.groups.join(', ') || '-' }}</p>
+            <div class="profile-subsection theme-toggle-row">
+              <p class="subtitle">界面主题：{{ isDarkMode ? '暗夜模式' : '日间模式' }}</p>
+              <button class="ghost" @click="toggleThemeMode">{{ isDarkMode ? '切换到日间' : '切换到暗夜' }}</button>
+            </div>
+            <div class="profile-subsection theme-toggle-row">
+              <p class="subtitle">运行日志</p>
+              <button class="ghost" @click="showLogModal = true">查看日志</button>
+            </div>
             <button class="logout-btn" @click="logout">退出登录</button>
           </article>
         </section>
@@ -1506,8 +1548,6 @@ onBeforeUnmount(() => {
         </div>
       </TransitionGroup>
     </div>
-
-    <button class="log-fab" @click="showLogModal = true" aria-label="查看日志">🛎</button>
 
     <div class="service-pill left" :class="{ online: isConnected, offline: !isConnected, collapsed: servicePillCollapsed }">
       <span class="dot"></span>
@@ -1575,6 +1615,15 @@ onBeforeUnmount(() => {
         </button>
       </nav>
     </Transition>
+
+    <button
+      v-if="isAuthed"
+      class="theme-fab"
+      :aria-label="isDarkMode ? '切换到日间模式' : '切换到暗夜模式'"
+      @click="toggleThemeMode"
+    >
+      {{ isDarkMode ? '☀' : '☾' }}
+    </button>
 
     <input
       ref="avatarFileInput"
