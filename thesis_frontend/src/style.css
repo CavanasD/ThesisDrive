@@ -337,8 +337,61 @@ button:disabled {
   height: 156px;
   pointer-events: none;
   z-index: 36;
-  background: url('./assets/top-frost-mask.svg') top center / 100% 100% no-repeat;
-  opacity: 0.9;
+  background: url('./assets/mask_white.png') top center / 100% 100% no-repeat;
+  opacity: 0.62;
+}
+
+.page.theme-dark .scroll-blur-mask {
+  background: url('./assets/mask_black.png') top center / 100% 100% no-repeat;
+  opacity: 0.54;
+}
+
+.scroll-blur-mask::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.08) 36%,
+    rgba(255, 255, 255, 0.03) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.page.theme-dark .scroll-blur-mask::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(9, 13, 18, 0.52) 0%,
+    rgba(9, 13, 18, 0.34) 42%,
+    rgba(9, 13, 18, 0.12) 74%,
+    rgba(9, 13, 18, 0) 100%
+  );
+}
+
+.scroll-blur-mask::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  backdrop-filter: blur(13px) saturate(92%);
+  -webkit-backdrop-filter: blur(13px) saturate(92%);
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.94) 22%,
+    rgba(0, 0, 0, 0.7) 52%,
+    rgba(0, 0, 0, 0.34) 80%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.94) 22%,
+    rgba(0, 0, 0, 0.7) 52%,
+    rgba(0, 0, 0, 0.34) 80%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 
 .topbar-spacer {
@@ -1590,7 +1643,16 @@ button:disabled {
 
   .scroll-blur-mask {
     height: 128px;
-    opacity: 0.82;
+    opacity: 0.56;
+  }
+
+  .page.theme-dark .scroll-blur-mask {
+    opacity: 0.5;
+  }
+
+  .scroll-blur-mask::after {
+    backdrop-filter: blur(11px) saturate(92%);
+    -webkit-backdrop-filter: blur(11px) saturate(92%);
   }
 
   .topbar-spacer {
