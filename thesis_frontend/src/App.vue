@@ -954,8 +954,28 @@ const submitRegister = async () => {
     if (registerForm.password !== registerForm.confirmPassword) {
       throw new Error('两次密码不一致')
     }
-    pushLog('注册接口暂未开放', 'warning')
-    pushToast('后端暂未开放注册接口', 'warning')
+
+    await callAction(
+      'register',
+      {
+        username: registerForm.username.trim(),
+        password: registerForm.password,
+        nickname: registerForm.nickname?.trim() || null,
+      },
+      false,
+    )
+
+    auth.username = registerForm.username.trim()
+    auth.password = ''
+
+    registerForm.username = ''
+    registerForm.password = ''
+    registerForm.confirmPassword = ''
+    registerForm.nickname = ''
+
+    authMode.value = 'login'
+    pushLog('注册成功，请登录', 'success')
+    pushToast('注册成功，请使用新账号登录', 'success')
   })
 }
 
@@ -1209,7 +1229,7 @@ onBeforeUnmount(() => {
               <input v-model="registerForm.confirmPassword" type="password" placeholder="再次输入密码" />
             </label>
             <button :disabled="busy" @click="runSafe(submitRegister)">提交注册</button>
-            <p class="tip">当前后端未开放 public register。</p>
+            <p class="tip">注册后默认加入 user 用户组。</p>
           </div>
         </Transition>
         </section>
