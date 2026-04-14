@@ -90,7 +90,6 @@ const toastIconByType = {
 
 const isAuthed = computed(() => Boolean(session.username && session.token))
 const remainingBytes = computed(() => Math.max(0, drive.totalBytes - drive.usedBytes))
-const navIndex = computed(() => Math.max(0, navItems.findIndex((i) => i.key === activeTab.value)))
 const transferLogs = computed(() => logs.value.slice(0, 12))
 const dashboardUsagePercent = ref(43)
 const selectedRecentFileId = ref('')
@@ -108,6 +107,14 @@ const avatarMemoryCache = new Map()
 let avatarLoadingPromise = null
 const servicePillCollapsed = ref(false)
 let servicePillTimer = null
+const navRef = ref(null)
+const navGlow = reactive({
+  active: false,
+  pressing: false,
+  x: 0,
+  y: 0,
+})
+const navDeform = reactive({ sx: 1, sy: 1, ox: '50%', oy: '50%' })
 
 const avatarDraft = reactive({
   sourceUrl: '',
@@ -1161,6 +1168,63 @@ const runSafe = async (fn) => {
   }
 }
 
+const GLOW_CLAMP_MARGIN = 24
+const DEFORM_SCALE_MAX = 0.025
+
+const clampGlow = (val, min, max) => Math.max(min - GLOW_CLAMP_MARGIN, Math.min(max + GLOW_CLAMP_MARGIN, val))
+
+const updateNavGlowPos = (e) => {
+  if (!navRef.value) return
+  const rect = navRef.value.getBoundingClientRect()
+  const rawX = e.clientX - rect.left
+  const rawY = e.clientY - rect.top
+  navGlow.x = clampGlow(rawX, 0, rect.width)
+  navGlow.y = clampGlow(rawY, 0, rect.height)
+
+  let dx = 0
+  let dy = 0
+  if (e.clientX < rect.left) dx = (e.clientX - rect.left) / rect.width
+  else if (e.clientX > rect.right) dx = (e.clientX - rect.right) / rect.width
+  if (e.clientY < rect.top) dy = (e.clientY - rect.top) / rect.height
+  else if (e.clientY > rect.bottom) dy = (e.clientY - rect.bottom) / rect.height
+
+  const absDx = Math.min(Math.abs(dx), 1)
+  const absDy = Math.min(Math.abs(dy), 1)
+  navDeform.sx = 1 + absDx * DEFORM_SCALE_MAX
+  navDeform.sy = 1 + absDy * DEFORM_SCALE_MAX
+  navDeform.ox = dx < 0 ? '100%' : dx > 0 ? '0%' : '50%'
+  navDeform.oy = dy < 0 ? '100%' : dy > 0 ? '0%' : '50%'
+}
+
+const onNavGlowMove = (e) => {
+  if (!navGlow.pressing) return
+  updateNavGlowPos(e)
+}
+
+const onNavGlowUp = () => {
+  navGlow.pressing = false
+  navGlow.active = false
+  navDeform.sx = 1
+  navDeform.sy = 1
+  document.removeEventListener('pointermove', onNavGlowMove)
+  document.removeEventListener('pointerup', onNavGlowUp)
+}
+
+const onNavPointerDown = (e) => {
+  updateNavGlowPos(e)
+  navGlow.active = true
+  navGlow.pressing = true
+  document.addEventListener('pointermove', onNavGlowMove)
+  document.addEventListener('pointerup', onNavGlowUp)
+}
+
+const navTransform = computed(() => {
+  if (navDeform.sx === 1 && navDeform.sy === 1) return ''
+  return `scale(${navDeform.sx}, ${navDeform.sy})`
+})
+
+const navOrigin = computed(() => `${navDeform.ox} ${navDeform.oy}`)
+
 onMounted(() => {
   const savedThemeMode = localStorage.getItem(THEME_MODE_KEY)
   if (savedThemeMode === 'dark' || savedThemeMode === 'light') {
@@ -1175,9 +1239,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (servicePillTimer) {
-    clearTimeout(servicePillTimer)
-  }
+  if (servicePillTimer) clearTimeout(servicePillTimer)
+  document.removeEventListener('pointermove', onNavGlowMove)
+  document.removeEventListener('pointerup', onNavGlowUp)
 })
 </script>
 
@@ -1621,8 +1685,19 @@ onBeforeUnmount(() => {
     </div>
 
     <Transition name="nav-rise">
-      <nav v-if="isAuthed" class="bottom-nav" :style="{ '--idx': navIndex }">
-        <span class="nav-indicator"></span>
+      <nav
+        v-if="isAuthed"
+        ref="navRef"
+        class="bottom-nav"
+        :class="{ 'nav-pressing': navGlow.pressing }"
+        :style="{ '--glow-x': navGlow.x + 'px', '--glow-y': navGlow.y + 'px', transform: navTransform, transformOrigin: navOrigin }"
+        @pointerdown.prevent="onNavPointerDown"
+      >
+        <span class="nav-glass-sheen"></span>
+        <span
+          class="nav-glow"
+          :class="{ active: navGlow.active, pressing: navGlow.pressing }"
+        ></span>
         <button
           v-for="item in navItems"
           :key="item.key"
