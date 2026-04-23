@@ -298,12 +298,16 @@ export class CfmsClient {
     }
   }
 
-  async uploadFileByTask(taskId, file) {
-    const frameId = await this.openRequestStream('upload_file', { task_id: taskId })
+  async uploadFileByTask(taskId, file, auth = null) {
+    const frameId = await this.openRequestStream('upload_file', { task_id: taskId }, auth)
 
-    const handshake = parseMaybeJson((await this.waitFrame(frameId)).payload)
+    const first = await this.waitFrame(frameId)
+    const handshake = parseMaybeJson(first.payload)
     if (!handshake || handshake.action !== 'transfer_file') {
       this.releaseStream(frameId)
+      if (handshake && typeof handshake.code === 'number') {
+        throw new Error(`上传握手失败: ${handshake.code} ${handshake.message || ''}`.trim())
+      }
       throw new Error('上传握手失败')
     }
 
@@ -351,14 +355,18 @@ export class CfmsClient {
     return conclude
   }
 
-  async downloadFileByTask(taskId, options = {}) {
+  async downloadFileByTask(taskId, options = {}, auth = null) {
     const strictIntegrity = options.strictIntegrity !== false
     const maxBytes = Number(options.maxBytes || 0)
-    const frameId = await this.openRequestStream('download_file', { task_id: taskId })
+    const frameId = await this.openRequestStream('download_file', { task_id: taskId }, auth)
 
-    const transferMeta = parseMaybeJson((await this.waitFrame(frameId)).payload)
+    const first = await this.waitFrame(frameId)
+    const transferMeta = parseMaybeJson(first.payload)
     if (!transferMeta || transferMeta.action !== 'transfer_file') {
       this.releaseStream(frameId)
+      if (transferMeta && typeof transferMeta.code === 'number') {
+        throw new Error(`下载握手失败: ${transferMeta.code} ${transferMeta.message || ''}`.trim())
+      }
       throw new Error('下载握手失败')
     }
 
