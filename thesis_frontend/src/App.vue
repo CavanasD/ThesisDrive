@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { CfmsClient } from './services/cfmsClient_Confused'
+import { CfmsClient } from './services/cfmsClient'
 
 import navDashboardIcon from './assets/icons/nav/dashboard.svg'
 import navFilesIcon from './assets/icons/nav/files.svg'
@@ -13,7 +13,26 @@ import toastDangerIcon from './assets/icons/toast/danger.png'
 
 const ROOT_ID = '/'
 
-const wsUrl = ref('wss://localhost:5104')
+function resolveCfmsWsUrl() {
+  const raw = import.meta.env.VITE_WS_URL
+  const v = typeof raw === 'string' ? raw.trim() : ''
+  const useAuto = !v || v.toLowerCase() === 'auto'
+
+  if (!useAuto) return v
+
+  if (import.meta.env.DEV) {
+    return 'ws://127.0.0.1:10085'
+  }
+
+  if (typeof window === 'undefined') {
+    return 'wss://127.0.0.1/ws'
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/ws`
+}
+
+const wsUrl = ref(resolveCfmsWsUrl())
 const isConnected = ref(false)
 const isConnecting = ref(false)
 const busy = ref(false)
@@ -684,10 +703,14 @@ const loadAvatarPreview = async () => {
       const taskId = avatarResp.data?.task_data?.task_id
       if (!taskId) return
 
-      const { fileBytes } = await client.downloadFileByTask(taskId, {
-        strictIntegrity: false,
-        maxBytes: 1024 * 1024,
-      })
+      const { fileBytes } = await client.downloadFileByTask(
+        taskId,
+        {
+          strictIntegrity: false,
+          maxBytes: 1024 * 1024,
+        },
+        authHeader(),
+      )
       if (!fileBytes || !fileBytes.length) {
         throw new Error('头像数据为空')
       }
@@ -838,7 +861,7 @@ const submitAvatarUpload = async () => {
       throw new Error('头像上传任务创建失败')
     }
 
-    const uploadResp = await client.uploadFileByTask(taskId, file)
+    const uploadResp = await client.uploadFileByTask(taskId, file, authHeader())
     if (uploadResp?.code >= 400) {
       throw new Error(uploadResp.message || '头像文件上传失败')
     }
