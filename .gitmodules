@@ -1,3 +1,7 @@
 [submodule "cfms_on_websocket-master"]
 	path = cfms_on_websocket-master
 	url = https://github.com/CavanasD/cfms_on_websocket
+
+[submodule "carapace"]
+	path = carapace
+	url = https://github.com/CavanasD/ThesisCarapace.git
