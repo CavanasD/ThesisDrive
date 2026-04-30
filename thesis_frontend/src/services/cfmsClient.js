@@ -298,7 +298,7 @@ export class CfmsClient {
     }
   }
 
-  async uploadFileByTask(taskId, file, auth = null) {
+  async uploadFileByTask(taskId, file, auth = null, onProgress = null) {
     const frameId = await this.openRequestStream('upload_file', { task_id: taskId }, auth)
 
     const first = await this.waitFrame(frameId)
@@ -348,6 +348,7 @@ export class CfmsClient {
       const end = Math.min(offset + chunkSize, fileBytes.length)
       this.sendFrame(frameId, FRAME_TYPE_PROCESS, fileBytes.slice(offset, end))
       offset = end
+      if (onProgress) onProgress({ loaded: offset, total: fileBytes.length })
     }
 
     const conclude = parseMaybeJson((await this.waitFrame(frameId, 60000)).payload)
@@ -381,6 +382,7 @@ export class CfmsClient {
     const encryptedChunks = []
     let ivBase64 = ''
     let aesKeyBase64 = ''
+    let receivedBytes = 0
 
     while (true) {
       const frame = await this.waitFrame(frameId, 60000)
@@ -393,8 +395,12 @@ export class CfmsClient {
       if (payload.action === 'file_chunk') {
         const chunk = base64ToBytes(payload.data.chunk)
         encryptedChunks.push(chunk)
+        receivedBytes += chunk.length
         if (!ivBase64 && payload.data.iv) {
           ivBase64 = payload.data.iv
+        }
+        if (options.onProgress && expectedSize > 0) {
+          options.onProgress({ loaded: Math.min(receivedBytes, expectedSize), total: expectedSize })
         }
       } else if (payload.action === 'aes_key') {
         aesKeyBase64 = payload.data.key
@@ -408,6 +414,10 @@ export class CfmsClient {
 
     if (!aesKeyBase64 || !ivBase64) {
       throw new Error('下载数据不完整，缺少解密参数')
+    }
+
+    if (typeof options.onChunksComplete === 'function') {
+      options.onChunksComplete()
     }
 
     const encryptedLength = encryptedChunks.reduce((sum, c) => sum + c.length, 0)
