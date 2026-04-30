@@ -382,6 +382,7 @@ export class CfmsClient {
     const encryptedChunks = []
     let ivBase64 = ''
     let aesKeyBase64 = ''
+    let receivedBytes = 0
 
     while (true) {
       const frame = await this.waitFrame(frameId, 60000)
@@ -394,12 +395,12 @@ export class CfmsClient {
       if (payload.action === 'file_chunk') {
         const chunk = base64ToBytes(payload.data.chunk)
         encryptedChunks.push(chunk)
+        receivedBytes += chunk.length
         if (!ivBase64 && payload.data.iv) {
           ivBase64 = payload.data.iv
         }
         if (options.onProgress && expectedSize > 0) {
-          const received = encryptedChunks.reduce((s, c) => s + c.length, 0)
-          options.onProgress({ loaded: Math.min(received, expectedSize), total: expectedSize })
+          options.onProgress({ loaded: Math.min(receivedBytes, expectedSize), total: expectedSize })
         }
       } else if (payload.action === 'aes_key') {
         aesKeyBase64 = payload.data.key
