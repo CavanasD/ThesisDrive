@@ -370,14 +370,23 @@ const loadServerInfo = async () => {
   pushLog(`服务信息已刷新: 协议 ${response.data.protocol_version}`, 'info')
 }
 
+const refreshRootStats = async () => {
+  const resp = await callAction('list_directory', { folder_id: null }, true)
+  const rootFiles = resp.data.documents || []
+  drive.usedBytes = rootFiles.reduce((sum, item) => sum + Number(item.size || 0), 0)
+  drive.recentFiles = pickRecentByModified(rootFiles, 20)
+}
+
 const loadFileList = async (folderId = null) => {
   const response = await callAction('list_directory', { folder_id: folderId }, true)
   drive.folders = response.data.folders || []
   drive.files = response.data.documents || []
   parentFolderId.value = response.data.parent_id || null
   currentFolderId.value = folderId
-  drive.usedBytes = drive.files.reduce((sum, item) => sum + Number(item.size || 0), 0)
-  drive.recentFiles = pickRecentByModified(drive.files, 20)
+  if (folderId === null) {
+    drive.usedBytes = drive.files.reduce((sum, item) => sum + Number(item.size || 0), 0)
+    drive.recentFiles = pickRecentByModified(drive.files, 20)
+  }
   filePage.value = 1
 }
 
@@ -394,8 +403,9 @@ const loadRecycle = async () => {
 }
 
 const loadDriveOverview = async () => {
-  await loadFileList(currentFolderId.value)
-  await loadRecycle()
+  const tasks = [loadFileList(currentFolderId.value), loadRecycle()]
+  if (currentFolderId.value !== null) tasks.push(refreshRootStats())
+  await Promise.all(tasks)
   lastSyncAt.value = Date.now() / 1000
 }
 

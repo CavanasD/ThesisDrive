@@ -412,12 +412,12 @@ export class CfmsClient {
 
     this.releaseStream(frameId)
 
-    if (typeof options.onChunksComplete === 'function') {
-      options.onChunksComplete()
-    }
-
     if (!aesKeyBase64 || !ivBase64) {
       throw new Error('下载数据不完整，缺少解密参数')
+    }
+
+    if (typeof options.onChunksComplete === 'function') {
+      options.onChunksComplete()
     }
 
     const encryptedLength = encryptedChunks.reduce((sum, c) => sum + c.length, 0)
