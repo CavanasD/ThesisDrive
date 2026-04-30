@@ -1716,6 +1716,31 @@ button:disabled {
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.32);
 }
 
+.waf-fab {
+  position: fixed;
+  right: 80px;
+  bottom: 18px;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 50%;
+  z-index: 49;
+  font-size: 22px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  color: #ff5252;
+  border: 1px solid rgba(211, 47, 47, 0.35);
+  background: rgba(40, 14, 14, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 16px rgba(211, 47, 47, 0.2);
+}
+.waf-fab:hover {
+  background: rgba(60, 14, 14, 0.92);
+  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4);
+  transform: scale(1.05);
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 520ms;
