@@ -109,6 +109,7 @@ export class CfmsClient {
     this.nextFrameId = 1
     this.streams = new Map()
     this.pendingServerEvents = []
+    this.onWafBlock = options.onWafBlock || null
   }
 
   setUrl(url) {
@@ -209,6 +210,13 @@ export class CfmsClient {
       if (serverEvent?.event) {
         this.pendingServerEvents.push(serverEvent)
         this.onServerEvent(serverEvent)
+      }
+    }
+
+    if (frameType === FRAME_TYPE_CONCLUSION) {
+      const parsed = parseMaybeJson(payload)
+      if (parsed?.waf === true && parsed?.code === 403) {
+        if (typeof this.onWafBlock === 'function') this.onWafBlock(parsed.data)
       }
     }
   }

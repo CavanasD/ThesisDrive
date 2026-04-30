@@ -1,3 +1,36 @@
+# ── 个人笔记（不同步给队友）──────────────────────────
 DevNotice.md
 To-do.md
-技术选型报告.md
+
+# ── IDE 工具数据 ──────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+.claude/
+.cursor/
+CLAUDE.md
+CURSOR.md
+
+# ── 根目录噪音 ────────────────────────────────────────
+package.json
+package-lock.json
+
+# ── Carapace（SpringBoot / Gradle）────────────────────
+carapace/.gradle/
+carapace/build/
+carapace/out/
+
+# ── thesis_frontend（Vue / Node）─────────────────────
+thesis_frontend/node_modules/
+thesis_frontend/dist/
+thesis_frontend/deploy/
+
+# ── Python ────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# ── 系统文件 ──────────────────────────────────────────
+.DS_Store
+Thumbs.db

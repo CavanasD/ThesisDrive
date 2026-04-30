@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { CfmsClient } from './services/cfmsClient'
+import WafAlert from './components/WafAlert.vue'
+import WafDashboard from './components/WafDashboard.vue'
 
 import navDashboardIcon from './assets/icons/nav/dashboard.svg'
 import navFilesIcon from './assets/icons/nav/files.svg'
@@ -106,6 +108,11 @@ const showLogModal = ref(false)
 const toasts = ref([])
 const toastSeq = ref(0)
 
+// ── WAF overlay ───────────────────────────────────────────────────────────────
+const showWafAlert = ref(false)
+const wafAlertData = ref(null)
+const showWafDashboard = ref(false)
+
 // ── Navigation items ─────────────────────────────────────────────────────────
 const activeTab = ref('dashboard')
 const navItems = [
@@ -156,6 +163,11 @@ const twoFaState = reactive({
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 const isAuthed = computed(() => Boolean(session.username && session.token))
+const isAdmin  = computed(() =>
+  session.groups.includes('admin') ||
+  session.permissions.some(p => p.toLowerCase().includes('admin')) ||
+  session.username === 'admin'
+)
 const isDarkMode = computed(() => themeMode.value === 'dark')
 
 const dashboardUsagePercent = computed(() => {
@@ -333,6 +345,10 @@ const client = new CfmsClient({
     }
   },
   onServerEvent: (event) => { pushLog(`服务端事件: ${event.event}`, 'info') },
+  onWafBlock: (data) => {
+    wafAlertData.value = data
+    showWafAlert.value = true
+  },
 })
 
 const runBusy = async (fn) => {
@@ -1847,5 +1863,24 @@ onBeforeUnmount(() => {
     >
       {{ isDarkMode ? '☀' : '☾' }}
     </button>
+
+    <!-- ── WAF Dashboard FAB (admin only) ── -->
+    <button
+      v-if="isAdmin"
+      class="waf-fab"
+      title="安全日志"
+      @click="showWafDashboard = true"
+    >⛨</button>
+
+    <!-- ── WAF overlays ── -->
+    <WafAlert
+      v-if="showWafAlert"
+      :data="wafAlertData"
+      @close="showWafAlert = false"
+    />
+    <WafDashboard
+      v-if="showWafDashboard"
+      @close="showWafDashboard = false"
+    />
   </div>
 </template>
