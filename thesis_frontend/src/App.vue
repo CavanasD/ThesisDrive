@@ -22,10 +22,6 @@ function resolveCfmsWsUrl() {
 
   if (!useAuto) return v
 
-  if (import.meta.env.DEV) {
-    return 'ws://127.0.0.1:10085'
-  }
-
   if (typeof window === 'undefined') {
     return 'wss://127.0.0.1/ws'
   }
