@@ -206,7 +206,10 @@ const pickRecentByModified = (documents = [], limit = 20) => {
   return top
 }
 
-const recentDisplayFiles = computed(() => pickRecentByModified(drive.recentFiles, 14))
+// Show every recent file (sorted by last_modified desc), capped at a sane
+// upper bound so the panel never explodes on a power user with thousands of
+// files. The list is scrollable, so the cap mostly bounds DOM size.
+const recentDisplayFiles = computed(() => pickRecentByModified(drive.recentFiles, 50))
 
 const fileCategoryOf = (title = '') => {
   const idx = String(title).lastIndexOf('.')

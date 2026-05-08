@@ -721,7 +721,12 @@ button:disabled {
 }
 
 .recent-card {
-  min-height: 420px;
+  /* Was a hard 420 px min-height which looked empty for users with one or
+     two files. Let the card size to its contents up to a cap, then scroll. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 520px;
 }
 
 .recent-list {
@@ -730,6 +735,12 @@ button:disabled {
   padding: 0;
   display: grid;
   gap: 8px;
+  /* Scroll inside the card when there are many rows so the dashboard layout
+     doesn't grow unbounded — the user's request was a chronological list, not
+     an infinite stack. */
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .recent-row {
