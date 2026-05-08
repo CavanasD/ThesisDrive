@@ -1579,18 +1579,13 @@ button:disabled {
   transition: transform 0.16s linear;
 }
 
-/* Admin defender tab host — gives WafDashboard a flush, full-height container
-   without the rounded card chrome that doesn't suit a dark dashboard surface. */
+/* Admin defender tab host — sized to the drive-shell grid column the same
+   way .dashboard-layout / .card sections are. WafDashboard provides its own
+   border + shadow, so the host itself is just a passthrough block. */
 .defender-host {
-  display: flex;
-  flex: 1;
-  min-height: calc(100vh - 160px); /* leaves room for nav + breathing space */
-  padding: 0;
-  border-radius: 14px;
-  overflow: hidden;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  display: block;
+  width: 100%;
+  min-height: 600px;
 }
 
 .bottom-nav {
