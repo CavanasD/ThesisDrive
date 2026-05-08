@@ -3,6 +3,13 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 
 const emit = defineEmits(['close'])
 
+// Inline mode (default) renders the panel as a regular block inside its parent
+// — no teleport, no backdrop. Modal mode is kept around for callers who still
+// want the old overlay behaviour, but App.vue no longer uses it.
+const props = defineProps({
+  inline: { type: Boolean, default: true },
+})
+
 const CARAPACE = import.meta.env.VITE_CARAPACE_URL || 'http://localhost:8080'
 
 // ── Panel animation ───────────────────────────────────────────────────────────
@@ -133,9 +140,16 @@ const fmtTime = (ts) => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="db-backdrop" :class="{ visible }" @click.self="dismiss">
-      <div class="db-panel" :class="{ visible }">
+  <component
+    :is="props.inline ? 'div' : 'Teleport'"
+    v-bind="props.inline ? {} : { to: 'body' }"
+  >
+    <div
+      class="db-backdrop"
+      :class="{ visible: visible || props.inline, 'db-inline-host': props.inline }"
+      @click.self="props.inline ? null : dismiss()"
+    >
+      <div class="db-panel" :class="{ visible: visible || props.inline, 'db-inline': props.inline }">
 
         <!-- Topbar -->
         <div class="db-topbar">
@@ -145,7 +159,7 @@ const fmtTime = (ts) => {
             <span class="db-sub">Carapace · 实时防护</span>
           </div>
           <button class="db-btn-ghost" @click="exportCsv">↓ 导出 CSV</button>
-          <button class="db-close" @click="dismiss">✕</button>
+          <button v-if="!props.inline" class="db-close" @click="dismiss">✕</button>
         </div>
 
         <!-- 统计卡片 -->
@@ -252,7 +266,7 @@ const fmtTime = (ts) => {
         </div>
       </div>
     </div>
-  </Teleport>
+  </component>
 </template>
 
 <style scoped>
@@ -272,6 +286,17 @@ const fmtTime = (ts) => {
   pointer-events: all;
 }
 
+/* Inline mode: render flat inside the parent tab card, no overlay/backdrop. */
+.db-backdrop.db-inline-host {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  background: transparent;
+  pointer-events: all;
+  display: block;
+  padding: 0;
+}
+
 .db-panel {
   width: min(1140px, 96vw);
   height: min(90vh, 880px);
@@ -286,6 +311,17 @@ const fmtTime = (ts) => {
   transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.32,0.72,0,1);
 }
 .db-panel.visible { opacity: 1; transform: translateY(0) scale(1); }
+.db-panel.db-inline {
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  border-radius: 12px;
+  box-shadow: none;
+  /* No entry animation in inline mode — it's the page content, not a popup. */
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
 
 /* Topbar */
 .db-topbar {

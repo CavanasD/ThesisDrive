@@ -52,6 +52,9 @@ const session = reactive({
   avatarId: '',
   permissions: [],
   groups: [],
+  homeDirectoryId: null, // server-issued at login; null for sysop / admin
+  diskQuota: null,
+  diskUsed: 0,
 })
 
 //  Drive state 
@@ -107,7 +110,8 @@ const toastSeq = ref(0)
 //  WAF overlay 
 const showWafAlert = ref(false)
 const wafAlertData = ref(null)
-const showWafDashboard = ref(false)
+// WAF dashboard is mounted inline through the 'defender' tab — kept here as
+// a comment for grep-ability. The old FAB / modal-overlay variant is gone.
 
 //  Navigation items
 const activeTab = ref('dashboard')
@@ -406,8 +410,11 @@ const loadFileList = async (folderId = null) => {
 }
 
 const loadRecycle = async () => {
+  // Non-admin users only have read access on their own home subtree, so we
+  // scope the recycle-bin query there. Admin (sysop) keeps the global view.
+  const folderId = session.homeDirectoryId || ROOT_ID
   try {
-    const response = await callAction('list_deleted_items', { folder_id: ROOT_ID }, true)
+    const response = await callAction('list_deleted_items', { folder_id: folderId }, true)
     drive.recycleFolders = response.data.folders || []
     drive.recycleFiles = response.data.documents || []
   } catch {
@@ -446,7 +453,9 @@ const navigateToFolder = async (folder) => {
 const navigateToBreadcrumb = async (index) => {
   if (index < 0) {
     breadcrumbs.value = []
-    currentFolderId.value = null
+    // For regular users "主目录" means their personal home, not the global
+    // root (which they cannot read anyway).
+    currentFolderId.value = session.homeDirectoryId || null
   } else {
     breadcrumbs.value = breadcrumbs.value.slice(0, index + 1)
     currentFolderId.value = breadcrumbs.value[index].id
@@ -766,9 +775,22 @@ const handleLogin = async () => {
     session.avatarId = response.data.avatar_id || ''
     session.permissions = response.data.permissions || []
     session.groups = response.data.groups || []
+    session.homeDirectoryId = response.data.home_directory_id || null
+    session.diskQuota = response.data.disk_quota ?? null
+    session.diskUsed = Number(response.data.disk_used || 0)
+
     // sysop is a defender-only role; land them on the WAF panel directly so
     // they never see the cloud-drive surface (and to make the role obvious).
-    activeTab.value = session.groups.includes('sysop') ? 'defender' : 'dashboard'
+    if (session.groups.includes('sysop')) {
+      activeTab.value = 'defender'
+    } else {
+      activeTab.value = 'dashboard'
+      // Non-admin users land inside their personal home folder. Without this
+      // they would see whatever loadFileList(null) returns (the global root,
+      // which they have no access to anyway — but still confusing).
+      currentFolderId.value = session.homeDirectoryId
+      breadcrumbs.value = []
+    }
     loginStage.need2fa = false
     loginStage.needForcePassword = false
     twoFaForm.token = ''
@@ -841,6 +863,9 @@ const logout = () => {
   session.avatarId = ''
   session.permissions = []
   session.groups = []
+  session.homeDirectoryId = null
+  session.diskQuota = null
+  session.diskUsed = 0
   activeTab.value = 'dashboard'
   selectedRecentFileId.value = ''
   currentFolderId.value = null
@@ -1566,8 +1591,8 @@ onBeforeUnmount(() => {
             </Transition>
           </section>
 
-          <!-- Defender (admin/sysop only — full-screen WAF dashboard) -->
-          <section v-else-if="activeTab === 'defender'" key="defender" class="card tall defender-host">
+          <!-- Defender (admin/sysop only — inline WAF dashboard, no overlay) -->
+          <section v-else-if="activeTab === 'defender'" key="defender" class="defender-host">
             <WafDashboard />
           </section>
 
@@ -1870,23 +1895,13 @@ onBeforeUnmount(() => {
       {{ isDarkMode ? '☀' : '☾' }}
     </button>
 
-    <!-- ── WAF Dashboard FAB (admin only) ── -->
-    <button
-      v-if="isAdmin"
-      class="waf-fab"
-      title="安全日志"
-      @click="showWafDashboard = true"
-    >⛨</button>
-
-    <!-- ── WAF overlays ── -->
+    <!-- ── WAF block alert (still triggered on any user's blocked request) ── -->
     <WafAlert
       v-if="showWafAlert"
       :data="wafAlertData"
       @close="showWafAlert = false"
     />
-    <WafDashboard
-      v-if="showWafDashboard"
-      @close="showWafDashboard = false"
-    />
+    <!-- WAF dashboard is now an inline tab for admin (see activeTab === 'defender'),
+         no FAB / overlay anymore — keeps the surface clean. -->
   </div>
 </template>
