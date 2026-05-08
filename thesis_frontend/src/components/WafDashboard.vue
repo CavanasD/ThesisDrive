@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 
 const emit = defineEmits(['close'])
 
@@ -47,6 +47,35 @@ const filteredEvents = computed(() => {
     return true
   })
 })
+
+// ── Pagination ───────────────────────────────────────────────────────────────
+const pageSize = ref(15)
+const currentPage = ref(1)
+
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredEvents.value.length / pageSize.value))
+)
+
+const pagedEvents = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredEvents.value.slice(start, start + pageSize.value)
+})
+
+// Reset to first page whenever a filter narrows the result set, so users
+// don't end up looking at an empty page after typing in the search box.
+watch([filterStatus, filterRule, filterTime, filterSearch, pageSize], () => {
+  currentPage.value = 1
+})
+
+// Clamp the current page if upstream events stream in and the user is on
+// a now-out-of-range page (rare but possible after filter changes).
+watch(totalPages, (n) => {
+  if (currentPage.value > n) currentPage.value = n
+})
+
+const goToPage = (p) => {
+  currentPage.value = Math.min(Math.max(1, p), totalPages.value)
+}
 
 const ruleNames = computed(() => [...new Set(events.value.map(e => e.ruleName).filter(Boolean))])
 
@@ -242,7 +271,7 @@ const fmtTime = (ts) => {
             </thead>
             <tbody>
               <tr
-                v-for="ev in filteredEvents"
+                v-for="ev in pagedEvents"
                 :key="ev.id"
                 :class="{ 'row-blocked': ev.blocked }"
               >
@@ -263,6 +292,26 @@ const fmtTime = (ts) => {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- 分页脚 -->
+        <div v-if="filteredEvents.length > 0" class="db-pagination">
+          <div class="db-page-info">
+            共 {{ filteredEvents.length }} 条 ·
+            第 {{ currentPage }} / {{ totalPages }} 页
+          </div>
+          <div class="db-page-ctl">
+            <select v-model.number="pageSize" class="db-select db-select-tight">
+              <option :value="10">10 / 页</option>
+              <option :value="15">15 / 页</option>
+              <option :value="25">25 / 页</option>
+              <option :value="50">50 / 页</option>
+            </select>
+            <button class="db-btn-ghost" :disabled="currentPage <= 1" @click="goToPage(1)">«</button>
+            <button class="db-btn-ghost" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">‹</button>
+            <button class="db-btn-ghost" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">›</button>
+            <button class="db-btn-ghost" :disabled="currentPage >= totalPages" @click="goToPage(totalPages)">»</button>
+          </div>
         </div>
       </div>
     </div>
@@ -315,12 +364,55 @@ const fmtTime = (ts) => {
   width: 100%;
   height: 100%;
   min-height: 600px;
-  border-radius: 12px;
-  box-shadow: none;
+  /* Match the rounded-card aesthetic of the rest of the site rather than the
+     stark modal look. Slightly lighter background reads better next to the
+     light/glass cards on the dashboard. */
+  background: #1a1d24;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
   /* No entry animation in inline mode — it's the page content, not a popup. */
   opacity: 1;
   transform: none;
   transition: none;
+}
+.db-panel.db-inline .db-topbar {
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Pagination footer */
+.db-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.015);
+  flex-shrink: 0;
+  gap: 12px;
+}
+.db-page-info {
+  color: #888;
+  font-size: 12px;
+}
+.db-page-ctl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.db-page-ctl .db-btn-ghost {
+  min-width: 28px;
+  padding: 5px 9px;
+  font-size: 13px;
+}
+.db-page-ctl .db-btn-ghost:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.db-select-tight {
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 /* Topbar */

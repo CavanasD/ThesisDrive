@@ -389,11 +389,22 @@ const loadServerInfo = async () => {
   pushLog(`服务信息已刷新: 协议 ${response.data.protocol_version}`, 'info')
 }
 
+// Lists "the user's drive root" — for sysop that's the global root, for a
+// regular user that's their /home/<username>. Used to populate the dashboard
+// usage ring and the recent-files panel so they reflect the user's own space.
 const refreshRootStats = async () => {
-  const resp = await callAction('list_directory', { folder_id: null }, true)
-  const rootFiles = resp.data.documents || []
-  drive.usedBytes = rootFiles.reduce((sum, item) => sum + Number(item.size || 0), 0)
-  drive.recentFiles = pickRecentByModified(rootFiles, 20)
+  const folderId = session.homeDirectoryId || null
+  try {
+    const resp = await callAction('list_directory', { folder_id: folderId }, true)
+    const files = resp.data.documents || []
+    drive.usedBytes = files.reduce((sum, item) => sum + Number(item.size || 0), 0)
+    drive.recentFiles = pickRecentByModified(files, 20)
+  } catch {
+    // Defensive: if the user has no read access to their landing folder
+    // (shouldn't happen — but if it does, don't leak previous state).
+    drive.recentFiles = []
+    drive.usedBytes = 0
+  }
 }
 
 const loadFileList = async (folderId = null) => {
@@ -402,7 +413,10 @@ const loadFileList = async (folderId = null) => {
   drive.files = response.data.documents || []
   parentFolderId.value = response.data.parent_id || null
   currentFolderId.value = folderId
-  if (folderId === null) {
+  // Refresh "recent files" whenever we're at the user's drive root —
+  // null for sysop (global root), home_directory_id for regular users.
+  const isAtDriveRoot = folderId === (session.homeDirectoryId || null)
+  if (isAtDriveRoot) {
     drive.usedBytes = drive.files.reduce((sum, item) => sum + Number(item.size || 0), 0)
     drive.recentFiles = pickRecentByModified(drive.files, 20)
   }
@@ -805,6 +819,11 @@ const handleLogin = async () => {
       avatarId: session.avatarId,
       permissions: session.permissions,
       groups: session.groups,
+      // Cloud-drive context — without these the page reload lands the user
+      // back at the global root instead of their personal /home/<username>.
+      homeDirectoryId: session.homeDirectoryId,
+      diskQuota: session.diskQuota,
+      diskUsed: session.diskUsed,
     }))
 
     runSafe(loadDriveOverview)
@@ -866,6 +885,14 @@ const logout = () => {
   session.homeDirectoryId = null
   session.diskQuota = null
   session.diskUsed = 0
+  // Wipe drive state — otherwise the previous user's listing leaks into
+  // the next user's UI before the first server response arrives.
+  drive.folders = []
+  drive.files = []
+  drive.recentFiles = []
+  drive.recycleFolders = []
+  drive.recycleFiles = []
+  drive.usedBytes = 0
   activeTab.value = 'dashboard'
   selectedRecentFileId.value = ''
   currentFolderId.value = null
@@ -1232,6 +1259,11 @@ onMounted(() => {
       const parsed = JSON.parse(saved)
       if (parsed.token && parsed.exp && parsed.exp > Date.now() / 1000) {
         Object.assign(session, parsed)
+        // Restore the user's drive landing folder so a page refresh lands
+        // them where they were — sysop at root, regular user at home.
+        if (!session.groups?.includes('sysop')) {
+          currentFolderId.value = session.homeDirectoryId || null
+        }
       } else {
         localStorage.removeItem(SESSION_STORAGE_KEY)
       }
@@ -1373,29 +1405,30 @@ onBeforeUnmount(() => {
 
             <article class="card recent-card">
               <h3>最近文件</h3>
-              <ul class="recent-list">
+              <ul class="recent-list compact">
                 <li
                   v-for="f in recentDisplayFiles"
                   :key="f.id"
-                  class="recent-row"
+                  class="recent-row compact"
                   :class="{ selected: selectedRecentFileId === f.id }"
                   @click="selectRecentFile(f)"
                 >
+                  <span class="file-glyph">{{ fileTypeGlyph(f.title) }}</span>
                   <div class="recent-main">
-                    <strong>{{ f.title }}</strong>
-                    <p class="subtitle">{{ formatSize(Number(f.size || 0)) }}</p>
+                    <strong class="recent-title" :title="f.title">{{ f.title }}</strong>
+                    <small class="recent-meta">
+                      {{ formatSize(Number(f.size || 0)) }} · {{ formatDateTime(f.last_modified) }}
+                    </small>
                   </div>
-                  <div class="recent-right">
-                    <small class="recent-time">{{ formatDateTime(f.last_modified) }}</small>
-                    <div v-if="selectedRecentFileId === f.id" class="recent-inline-actions" @click.stop>
-                      <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleRecentAction(f, 'download'))">⤓</button>
-                      <button class="ghost icon-btn" title="重命名" @click="handleRecentAction(f, 'rename')">✎</button>
-                      <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleRecentAction(f, 'recycle'))">⌫</button>
-                    </div>
+                  <div v-if="selectedRecentFileId === f.id" class="recent-inline-actions" @click.stop>
+                    <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleRecentAction(f, 'download'))">⤓</button>
+                    <button class="ghost icon-btn" title="重命名" @click="handleRecentAction(f, 'rename')">✎</button>
+                    <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleRecentAction(f, 'recycle'))">⌫</button>
                   </div>
                 </li>
-                <li v-if="!recentDisplayFiles.length" class="recent-row">
-                  <div class="recent-main"><p class="subtitle">登录后同步文件可见最近访问记录</p></div>
+                <li v-if="!recentDisplayFiles.length" class="recent-row compact empty">
+                  <span class="file-glyph muted">📭</span>
+                  <p class="subtitle">还没有文件，去"文件"页传点东西吧</p>
                 </li>
               </ul>
             </article>
