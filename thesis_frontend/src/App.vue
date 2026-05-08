@@ -30,13 +30,13 @@ function resolveCfmsWsUrl() {
   return `${protocol}//${window.location.host}/ws`
 }
 
-// ── Connection ──────────────────────────────────────────────────────────────
+//  Connection 
 const wsUrl = ref(resolveCfmsWsUrl())
 const isConnected = ref(false)
 const isConnecting = ref(false)
 const busy = ref(false)
 
-// ── Auth ────────────────────────────────────────────────────────────────────
+//  Auth 
 const authMode = ref('login')
 const auth = reactive({ username: 'admin', password: '' })
 const registerForm = reactive({ username: '', password: '', confirmPassword: '', nickname: '' })
@@ -54,7 +54,7 @@ const session = reactive({
   groups: [],
 })
 
-// ── Drive state ─────────────────────────────────────────────────────────────
+//  Drive state 
 const drive = reactive({
   totalBytes: 20 * 1024 * 1024 * 1024,
   usedBytes: 0,
@@ -65,12 +65,12 @@ const drive = reactive({
   recycleFiles: [],
 })
 
-// ── Folder navigation ────────────────────────────────────────────────────────
+//  Folder navigation 
 const currentFolderId = ref(null)
 const breadcrumbs = ref([])
 const parentFolderId = ref(null)
 
-// ── File list controls ───────────────────────────────────────────────────────
+//  File list controls 
 const fileQuery = ref('')
 const fileCategory = ref('all')
 const fileSortKey = ref('title')
@@ -78,7 +78,7 @@ const fileSortOrder = ref('asc')
 const filePage = ref(1)
 const filePageSize = ref(8)
 
-// ── Transfer queue ────────────────────────────────────────────────────────────
+//  Transfer queue 
 const transfers = ref([])
 const transferSeq = ref(0)
 const uploadFileInputEl = ref(null)
@@ -86,36 +86,40 @@ const isDragging = ref(false)
 const showRecycle = ref(false)
 const wsUrlInput = ref(resolveCfmsWsUrl())
 
-// ── Modals ───────────────────────────────────────────────────────────────────
+//  Modals 
 const renameModal = reactive({ show: false, type: '', id: '', currentName: '', newName: '' })
 const createFolderModal = reactive({ show: false, name: '' })
 
-// ── Search ────────────────────────────────────────────────────────────────────
+//  Search 
 const searchQuery = ref('')
 const isSearchMode = ref(false)
 const searchResultDocs = ref([])
 const searchResultFolders = ref([])
 const isSearching = ref(false)
 
-// ── Logs & toasts ────────────────────────────────────────────────────────────
+//  Logs & toasts 
 const logs = ref([])
 const logSeq = ref(0)
 const showLogModal = ref(false)
 const toasts = ref([])
 const toastSeq = ref(0)
 
-// ── WAF overlay ───────────────────────────────────────────────────────────────
+//  WAF overlay 
 const showWafAlert = ref(false)
 const wafAlertData = ref(null)
 const showWafDashboard = ref(false)
 
-// ── Navigation items ─────────────────────────────────────────────────────────
+//  Navigation items
 const activeTab = ref('dashboard')
-const navItems = [
+const NAV_DRIVE = [
   { key: 'dashboard', label: '主页', icon: navDashboardIcon },
   { key: 'files', label: '文件', icon: navFilesIcon },
   { key: 'transfer', label: '传输', icon: navTransferIcon },
   { key: 'profile', label: '我的', icon: navProfileIcon },
+]
+const NAV_DEFENDER_ONLY = [
+  { key: 'defender', label: '防御者面板', icon: navDashboardIcon },
+  { key: 'profile',  label: '我的',       icon: navProfileIcon },
 ]
 const toastIconByType = {
   success: toastSuccessIcon,
@@ -124,7 +128,7 @@ const toastIconByType = {
   info: toastWarningIcon,
 }
 
-// ── Avatar ───────────────────────────────────────────────────────────────────
+//  Avatar 
 const selectedRecentFileId = ref('')
 const lastSyncAt = ref(0)
 const avatarImageUrl = ref('')
@@ -157,13 +161,12 @@ const twoFaState = reactive({
   disablePassword: '',
 })
 
-// ── Computed ──────────────────────────────────────────────────────────────────
+//  Computed 
 const isAuthed = computed(() => Boolean(session.username && session.token))
-const isAdmin  = computed(() =>
-  session.groups.includes('admin') ||
-  session.permissions.some(p => p.toLowerCase().includes('admin')) ||
-  session.username === 'admin'
-)
+// Sysop group is the cloud-drive's admin role. Anyone in this group is treated
+// as a defender/management user — they get the WAF panel and no drive UI.
+const isAdmin  = computed(() => session.groups.includes('sysop'))
+const navItems = computed(() => isAdmin.value ? NAV_DEFENDER_ONLY : NAV_DRIVE)
 const isDarkMode = computed(() => themeMode.value === 'dark')
 
 const dashboardUsagePercent = computed(() => {
@@ -252,7 +255,7 @@ const navOrigin = computed(() => `${navDeform.ox} ${navDeform.oy}`)
 
 const activeTransferCount = computed(() => transfers.value.filter(t => t.status === 'active' || t.status === 'decrypting').length)
 
-// ── Formatters ────────────────────────────────────────────────────────────────
+//  Formatters 
 const formatGB = (bytes) => `${(bytes / (1024 ** 3)).toFixed(2)} GB`
 const formatMB = (bytes) => `${(bytes / (1024 ** 2)).toFixed(2)} MB`
 const formatSize = (bytes) => {
@@ -289,7 +292,7 @@ const groupTagClass = (groupName = '') => {
   return 'group-pill role-other'
 }
 
-// ── Logging & toasts ──────────────────────────────────────────────────────────
+//  Logging & toasts 
 const pushLog = (text, type = 'info') => {
   logs.value.unshift({ id: ++logSeq.value, text, type, time: new Date().toLocaleTimeString() })
   logs.value = logs.value.slice(0, 30)
@@ -763,7 +766,9 @@ const handleLogin = async () => {
     session.avatarId = response.data.avatar_id || ''
     session.permissions = response.data.permissions || []
     session.groups = response.data.groups || []
-    activeTab.value = 'dashboard'
+    // sysop is a defender-only role; land them on the WAF panel directly so
+    // they never see the cloud-drive surface (and to make the role obvious).
+    activeTab.value = session.groups.includes('sysop') ? 'defender' : 'dashboard'
     loginStage.need2fa = false
     loginStage.needForcePassword = false
     twoFaForm.token = ''
@@ -1559,6 +1564,11 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </Transition>
+          </section>
+
+          <!-- Defender (admin/sysop only — full-screen WAF dashboard) -->
+          <section v-else-if="activeTab === 'defender'" key="defender" class="card tall defender-host">
+            <WafDashboard />
           </section>
 
           <!-- Transfer -->
