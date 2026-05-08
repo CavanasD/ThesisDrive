@@ -22,10 +22,6 @@ function resolveCfmsWsUrl() {
 
   if (!useAuto) return v
 
-  if (import.meta.env.DEV) {
-    return 'ws://127.0.0.1:10085'
-  }
-
   if (typeof window === 'undefined') {
     return 'wss://127.0.0.1/ws'
   }
@@ -34,13 +30,13 @@ function resolveCfmsWsUrl() {
   return `${protocol}//${window.location.host}/ws`
 }
 
-// ── Connection ──────────────────────────────────────────────────────────────
+//  Connection 
 const wsUrl = ref(resolveCfmsWsUrl())
 const isConnected = ref(false)
 const isConnecting = ref(false)
 const busy = ref(false)
 
-// ── Auth ────────────────────────────────────────────────────────────────────
+//  Auth 
 const authMode = ref('login')
 const auth = reactive({ username: 'admin', password: '' })
 const registerForm = reactive({ username: '', password: '', confirmPassword: '', nickname: '' })
@@ -56,9 +52,12 @@ const session = reactive({
   avatarId: '',
   permissions: [],
   groups: [],
+  homeDirectoryId: null, // server-issued at login; null for sysop / admin
+  diskQuota: null,
+  diskUsed: 0,
 })
 
-// ── Drive state ─────────────────────────────────────────────────────────────
+//  Drive state 
 const drive = reactive({
   totalBytes: 20 * 1024 * 1024 * 1024,
   usedBytes: 0,
@@ -69,12 +68,12 @@ const drive = reactive({
   recycleFiles: [],
 })
 
-// ── Folder navigation ────────────────────────────────────────────────────────
+//  Folder navigation 
 const currentFolderId = ref(null)
 const breadcrumbs = ref([])
 const parentFolderId = ref(null)
 
-// ── File list controls ───────────────────────────────────────────────────────
+//  File list controls 
 const fileQuery = ref('')
 const fileCategory = ref('all')
 const fileSortKey = ref('title')
@@ -82,7 +81,7 @@ const fileSortOrder = ref('asc')
 const filePage = ref(1)
 const filePageSize = ref(8)
 
-// ── Transfer queue ────────────────────────────────────────────────────────────
+//  Transfer queue 
 const transfers = ref([])
 const transferSeq = ref(0)
 const uploadFileInputEl = ref(null)
@@ -90,36 +89,41 @@ const isDragging = ref(false)
 const showRecycle = ref(false)
 const wsUrlInput = ref(resolveCfmsWsUrl())
 
-// ── Modals ───────────────────────────────────────────────────────────────────
+//  Modals 
 const renameModal = reactive({ show: false, type: '', id: '', currentName: '', newName: '' })
 const createFolderModal = reactive({ show: false, name: '' })
 
-// ── Search ────────────────────────────────────────────────────────────────────
+//  Search 
 const searchQuery = ref('')
 const isSearchMode = ref(false)
 const searchResultDocs = ref([])
 const searchResultFolders = ref([])
 const isSearching = ref(false)
 
-// ── Logs & toasts ────────────────────────────────────────────────────────────
+//  Logs & toasts 
 const logs = ref([])
 const logSeq = ref(0)
 const showLogModal = ref(false)
 const toasts = ref([])
 const toastSeq = ref(0)
 
-// ── WAF overlay ───────────────────────────────────────────────────────────────
+//  WAF overlay 
 const showWafAlert = ref(false)
 const wafAlertData = ref(null)
-const showWafDashboard = ref(false)
+// WAF dashboard is mounted inline through the 'defender' tab — kept here as
+// a comment for grep-ability. The old FAB / modal-overlay variant is gone.
 
-// ── Navigation items ─────────────────────────────────────────────────────────
+//  Navigation items
 const activeTab = ref('dashboard')
-const navItems = [
+const NAV_DRIVE = [
   { key: 'dashboard', label: '主页', icon: navDashboardIcon },
   { key: 'files', label: '文件', icon: navFilesIcon },
   { key: 'transfer', label: '传输', icon: navTransferIcon },
   { key: 'profile', label: '我的', icon: navProfileIcon },
+]
+const NAV_DEFENDER_ONLY = [
+  { key: 'defender', label: '防御者面板', icon: navDashboardIcon },
+  { key: 'profile',  label: '我的',       icon: navProfileIcon },
 ]
 const toastIconByType = {
   success: toastSuccessIcon,
@@ -128,7 +132,7 @@ const toastIconByType = {
   info: toastWarningIcon,
 }
 
-// ── Avatar ───────────────────────────────────────────────────────────────────
+//  Avatar 
 const selectedRecentFileId = ref('')
 const lastSyncAt = ref(0)
 const avatarImageUrl = ref('')
@@ -161,13 +165,12 @@ const twoFaState = reactive({
   disablePassword: '',
 })
 
-// ── Computed ──────────────────────────────────────────────────────────────────
+//  Computed 
 const isAuthed = computed(() => Boolean(session.username && session.token))
-const isAdmin  = computed(() =>
-  session.groups.includes('admin') ||
-  session.permissions.some(p => p.toLowerCase().includes('admin')) ||
-  session.username === 'admin'
-)
+// Sysop group is the cloud-drive's admin role. Anyone in this group is treated
+// as a defender/management user — they get the WAF panel and no drive UI.
+const isAdmin  = computed(() => session.groups.includes('sysop'))
+const navItems = computed(() => isAdmin.value ? NAV_DEFENDER_ONLY : NAV_DRIVE)
 const isDarkMode = computed(() => themeMode.value === 'dark')
 
 const dashboardUsagePercent = computed(() => {
@@ -203,7 +206,10 @@ const pickRecentByModified = (documents = [], limit = 20) => {
   return top
 }
 
-const recentDisplayFiles = computed(() => pickRecentByModified(drive.recentFiles, 14))
+// Show every recent file (sorted by last_modified desc), capped at a sane
+// upper bound so the panel never explodes on a power user with thousands of
+// files. The list is scrollable, so the cap mostly bounds DOM size.
+const recentDisplayFiles = computed(() => pickRecentByModified(drive.recentFiles, 50))
 
 const fileCategoryOf = (title = '') => {
   const idx = String(title).lastIndexOf('.')
@@ -256,7 +262,7 @@ const navOrigin = computed(() => `${navDeform.ox} ${navDeform.oy}`)
 
 const activeTransferCount = computed(() => transfers.value.filter(t => t.status === 'active' || t.status === 'decrypting').length)
 
-// ── Formatters ────────────────────────────────────────────────────────────────
+//  Formatters 
 const formatGB = (bytes) => `${(bytes / (1024 ** 3)).toFixed(2)} GB`
 const formatMB = (bytes) => `${(bytes / (1024 ** 2)).toFixed(2)} MB`
 const formatSize = (bytes) => {
@@ -293,7 +299,7 @@ const groupTagClass = (groupName = '') => {
   return 'group-pill role-other'
 }
 
-// ── Logging & toasts ──────────────────────────────────────────────────────────
+//  Logging & toasts 
 const pushLog = (text, type = 'info') => {
   logs.value.unshift({ id: ++logSeq.value, text, type, time: new Date().toLocaleTimeString() })
   logs.value = logs.value.slice(0, 30)
@@ -386,11 +392,22 @@ const loadServerInfo = async () => {
   pushLog(`服务信息已刷新: 协议 ${response.data.protocol_version}`, 'info')
 }
 
+// Lists "the user's drive root" — for sysop that's the global root, for a
+// regular user that's their /home/<username>. Used to populate the dashboard
+// usage ring and the recent-files panel so they reflect the user's own space.
 const refreshRootStats = async () => {
-  const resp = await callAction('list_directory', { folder_id: null }, true)
-  const rootFiles = resp.data.documents || []
-  drive.usedBytes = rootFiles.reduce((sum, item) => sum + Number(item.size || 0), 0)
-  drive.recentFiles = pickRecentByModified(rootFiles, 20)
+  const folderId = session.homeDirectoryId || null
+  try {
+    const resp = await callAction('list_directory', { folder_id: folderId }, true)
+    const files = resp.data.documents || []
+    drive.usedBytes = files.reduce((sum, item) => sum + Number(item.size || 0), 0)
+    drive.recentFiles = pickRecentByModified(files, 20)
+  } catch {
+    // Defensive: if the user has no read access to their landing folder
+    // (shouldn't happen — but if it does, don't leak previous state).
+    drive.recentFiles = []
+    drive.usedBytes = 0
+  }
 }
 
 const loadFileList = async (folderId = null) => {
@@ -399,7 +416,10 @@ const loadFileList = async (folderId = null) => {
   drive.files = response.data.documents || []
   parentFolderId.value = response.data.parent_id || null
   currentFolderId.value = folderId
-  if (folderId === null) {
+  // Refresh "recent files" whenever we're at the user's drive root —
+  // null for sysop (global root), home_directory_id for regular users.
+  const isAtDriveRoot = folderId === (session.homeDirectoryId || null)
+  if (isAtDriveRoot) {
     drive.usedBytes = drive.files.reduce((sum, item) => sum + Number(item.size || 0), 0)
     drive.recentFiles = pickRecentByModified(drive.files, 20)
   }
@@ -407,8 +427,11 @@ const loadFileList = async (folderId = null) => {
 }
 
 const loadRecycle = async () => {
+  // Non-admin users only have read access on their own home subtree, so we
+  // scope the recycle-bin query there. Admin (sysop) keeps the global view.
+  const folderId = session.homeDirectoryId || ROOT_ID
   try {
-    const response = await callAction('list_deleted_items', { folder_id: ROOT_ID }, true)
+    const response = await callAction('list_deleted_items', { folder_id: folderId }, true)
     drive.recycleFolders = response.data.folders || []
     drive.recycleFiles = response.data.documents || []
   } catch {
@@ -447,7 +470,9 @@ const navigateToFolder = async (folder) => {
 const navigateToBreadcrumb = async (index) => {
   if (index < 0) {
     breadcrumbs.value = []
-    currentFolderId.value = null
+    // For regular users "主目录" means their personal home, not the global
+    // root (which they cannot read anyway).
+    currentFolderId.value = session.homeDirectoryId || null
   } else {
     breadcrumbs.value = breadcrumbs.value.slice(0, index + 1)
     currentFolderId.value = breadcrumbs.value[index].id
@@ -767,7 +792,22 @@ const handleLogin = async () => {
     session.avatarId = response.data.avatar_id || ''
     session.permissions = response.data.permissions || []
     session.groups = response.data.groups || []
-    activeTab.value = 'dashboard'
+    session.homeDirectoryId = response.data.home_directory_id || null
+    session.diskQuota = response.data.disk_quota ?? null
+    session.diskUsed = Number(response.data.disk_used || 0)
+
+    // sysop is a defender-only role; land them on the WAF panel directly so
+    // they never see the cloud-drive surface (and to make the role obvious).
+    if (session.groups.includes('sysop')) {
+      activeTab.value = 'defender'
+    } else {
+      activeTab.value = 'dashboard'
+      // Non-admin users land inside their personal home folder. Without this
+      // they would see whatever loadFileList(null) returns (the global root,
+      // which they have no access to anyway — but still confusing).
+      currentFolderId.value = session.homeDirectoryId
+      breadcrumbs.value = []
+    }
     loginStage.need2fa = false
     loginStage.needForcePassword = false
     twoFaForm.token = ''
@@ -782,6 +822,11 @@ const handleLogin = async () => {
       avatarId: session.avatarId,
       permissions: session.permissions,
       groups: session.groups,
+      // Cloud-drive context — without these the page reload lands the user
+      // back at the global root instead of their personal /home/<username>.
+      homeDirectoryId: session.homeDirectoryId,
+      diskQuota: session.diskQuota,
+      diskUsed: session.diskUsed,
     }))
 
     runSafe(loadDriveOverview)
@@ -840,6 +885,17 @@ const logout = () => {
   session.avatarId = ''
   session.permissions = []
   session.groups = []
+  session.homeDirectoryId = null
+  session.diskQuota = null
+  session.diskUsed = 0
+  // Wipe drive state — otherwise the previous user's listing leaks into
+  // the next user's UI before the first server response arrives.
+  drive.folders = []
+  drive.files = []
+  drive.recentFiles = []
+  drive.recycleFolders = []
+  drive.recycleFiles = []
+  drive.usedBytes = 0
   activeTab.value = 'dashboard'
   selectedRecentFileId.value = ''
   currentFolderId.value = null
@@ -1206,6 +1262,11 @@ onMounted(() => {
       const parsed = JSON.parse(saved)
       if (parsed.token && parsed.exp && parsed.exp > Date.now() / 1000) {
         Object.assign(session, parsed)
+        // Restore the user's drive landing folder so a page refresh lands
+        // them where they were — sysop at root, regular user at home.
+        if (!session.groups?.includes('sysop')) {
+          currentFolderId.value = session.homeDirectoryId || null
+        }
       } else {
         localStorage.removeItem(SESSION_STORAGE_KEY)
       }
@@ -1347,29 +1408,30 @@ onBeforeUnmount(() => {
 
             <article class="card recent-card">
               <h3>最近文件</h3>
-              <ul class="recent-list">
+              <ul class="recent-list compact">
                 <li
                   v-for="f in recentDisplayFiles"
                   :key="f.id"
-                  class="recent-row"
+                  class="recent-row compact"
                   :class="{ selected: selectedRecentFileId === f.id }"
                   @click="selectRecentFile(f)"
                 >
+                  <span class="file-glyph">{{ fileTypeGlyph(f.title) }}</span>
                   <div class="recent-main">
-                    <strong>{{ f.title }}</strong>
-                    <p class="subtitle">{{ formatSize(Number(f.size || 0)) }}</p>
+                    <strong class="recent-title" :title="f.title">{{ f.title }}</strong>
+                    <small class="recent-meta">
+                      {{ formatSize(Number(f.size || 0)) }} · {{ formatDateTime(f.last_modified) }}
+                    </small>
                   </div>
-                  <div class="recent-right">
-                    <small class="recent-time">{{ formatDateTime(f.last_modified) }}</small>
-                    <div v-if="selectedRecentFileId === f.id" class="recent-inline-actions" @click.stop>
-                      <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleRecentAction(f, 'download'))">⤓</button>
-                      <button class="ghost icon-btn" title="重命名" @click="handleRecentAction(f, 'rename')">✎</button>
-                      <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleRecentAction(f, 'recycle'))">⌫</button>
-                    </div>
+                  <div v-if="selectedRecentFileId === f.id" class="recent-inline-actions" @click.stop>
+                    <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleRecentAction(f, 'download'))">⤓</button>
+                    <button class="ghost icon-btn" title="重命名" @click="handleRecentAction(f, 'rename')">✎</button>
+                    <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleRecentAction(f, 'recycle'))">⌫</button>
                   </div>
                 </li>
-                <li v-if="!recentDisplayFiles.length" class="recent-row">
-                  <div class="recent-main"><p class="subtitle">登录后同步文件可见最近访问记录</p></div>
+                <li v-if="!recentDisplayFiles.length" class="recent-row compact empty">
+                  <span class="file-glyph muted">📭</span>
+                  <p class="subtitle">还没有文件，去"文件"页传点东西吧</p>
                 </li>
               </ul>
             </article>
@@ -1563,6 +1625,11 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </Transition>
+          </section>
+
+          <!-- Defender (admin/sysop only — inline WAF dashboard, no overlay) -->
+          <section v-else-if="activeTab === 'defender'" key="defender" class="defender-host">
+            <WafDashboard />
           </section>
 
           <!-- Transfer -->
@@ -1864,23 +1931,13 @@ onBeforeUnmount(() => {
       {{ isDarkMode ? '☀' : '☾' }}
     </button>
 
-    <!-- ── WAF Dashboard FAB (admin only) ── -->
-    <button
-      v-if="isAdmin"
-      class="waf-fab"
-      title="安全日志"
-      @click="showWafDashboard = true"
-    >⛨</button>
-
-    <!-- ── WAF overlays ── -->
+    <!-- ── WAF block alert (still triggered on any user's blocked request) ── -->
     <WafAlert
       v-if="showWafAlert"
       :data="wafAlertData"
       @close="showWafAlert = false"
     />
-    <WafDashboard
-      v-if="showWafDashboard"
-      @close="showWafDashboard = false"
-    />
+    <!-- WAF dashboard is now an inline tab for admin (see activeTab === 'defender'),
+         no FAB / overlay anymore — keeps the surface clean. -->
   </div>
 </template>

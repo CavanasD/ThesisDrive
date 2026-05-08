@@ -721,7 +721,12 @@ button:disabled {
 }
 
 .recent-card {
-  min-height: 420px;
+  /* Was a hard 420 px min-height which looked empty for users with one or
+     two files. Let the card size to its contents up to a cap, then scroll. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 520px;
 }
 
 .recent-list {
@@ -730,6 +735,12 @@ button:disabled {
   padding: 0;
   display: grid;
   gap: 8px;
+  /* Scroll inside the card when there are many rows so the dashboard layout
+     doesn't grow unbounded — the user's request was a chronological list, not
+     an infinite stack. */
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .recent-row {
@@ -755,6 +766,60 @@ button:disabled {
 .recent-row.selected {
   border-color: var(--accent-soft-border);
   background: var(--accent-soft-bg);
+}
+
+/* Compact mode: single-row file with [icon] [title + meta] [actions] layout.
+   Used by the dashboard's "最近文件" panel — half the height of the legacy
+   two-line row, easier to scan, and consistent with the file-browser glyphs. */
+.recent-list.compact {
+  gap: 4px;
+}
+.recent-row.compact {
+  padding: 6px 10px;
+  gap: 10px;
+  align-items: center;
+}
+.recent-row.compact .file-glyph {
+  font-size: 16px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+  opacity: 0.85;
+}
+.recent-row.compact .file-glyph.muted {
+  opacity: 0.4;
+}
+.recent-row.compact .recent-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.recent-row.compact .recent-title {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-row.compact .recent-meta {
+  font-size: 11px;
+  color: var(--muted, #889);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-row.compact.empty {
+  cursor: default;
+  background: transparent;
+  border-style: dashed;
+  border-color: rgba(120, 130, 160, 0.25);
+}
+.recent-row.compact.empty:hover {
+  transform: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .recent-main {
@@ -1514,13 +1579,25 @@ button:disabled {
   transition: transform 0.16s linear;
 }
 
+/* Admin defender tab host — sized to the drive-shell grid column the same
+   way .dashboard-layout / .card sections are. WafDashboard provides its own
+   border + shadow, so the host itself is just a passthrough block. */
+.defender-host {
+  display: block;
+  width: 100%;
+  min-height: 600px;
+}
+
 .bottom-nav {
   position: fixed;
   left: 0;
   right: 0;
   margin: 0 auto;
   bottom: 20px;
-  width: min(92vw, 420px);
+  /* Width follows the actual number of items so a 2-tab admin nav doesn't
+     stretch to 4-tab width. Each column is clamped between 84-105 px. */
+  width: max-content;
+  max-width: 92vw;
   padding: 7px;
   border-radius: 999px;
   border: 0.5px solid rgba(255, 255, 255, 0.28);
@@ -1528,7 +1605,8 @@ button:disabled {
   backdrop-filter: blur(52px) saturate(180%);
   -webkit-backdrop-filter: blur(52px) saturate(180%);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(84px, 105px);
   gap: 0;
   z-index: 50;
   box-shadow:

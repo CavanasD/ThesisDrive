@@ -1,5 +1,3 @@
-import CryptoJS from 'crypto-js'
-
 const FRAME_TYPE_PROCESS = 0
 const FRAME_TYPE_CONCLUSION = 1
 
@@ -14,23 +12,6 @@ const randomNonce = () => {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-const bytesToWordArray = (bytes) => {
-  const words = []
-  for (let i = 0; i < bytes.length; i += 1) {
-    words[(i / 4) | 0] |= bytes[i] << (24 - 8 * (i % 4))
-  }
-  return CryptoJS.lib.WordArray.create(words, bytes.length)
-}
-
-const wordArrayToBytes = (wordArray) => {
-  const { words, sigBytes } = wordArray
-  const result = new Uint8Array(sigBytes)
-  for (let i = 0; i < sigBytes; i += 1) {
-    result[i] = (words[(i / 4) | 0] >>> (24 - 8 * (i % 4))) & 0xff
-  }
-  return result
-}
-
 const base64ToBytes = (base64) => {
   const raw = atob(base64)
   const out = new Uint8Array(raw.length)
@@ -43,49 +24,6 @@ const base64ToBytes = (base64) => {
 const sha256Hex = async (bytes) => {
   const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
   return Array.from(new Uint8Array(hashBuffer), (b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-const aesEcbEncryptBlock = (keyWordArray, blockBytes) => {
-  const encrypted = CryptoJS.AES.encrypt(bytesToWordArray(blockBytes), keyWordArray, {
-    mode: CryptoJS.mode.ECB,
-    padding: CryptoJS.pad.NoPadding,
-  })
-  return wordArrayToBytes(encrypted.ciphertext)
-}
-
-const decryptCfb8Manual = (cipherBytes, keyWordArray, ivBytes) => {
-  const output = new Uint8Array(cipherBytes.length)
-  const state = new Uint8Array(ivBytes)
-
-  for (let i = 0; i < cipherBytes.length; i += 1) {
-    const keystream = aesEcbEncryptBlock(keyWordArray, state)
-    output[i] = cipherBytes[i] ^ keystream[0]
-
-    state.copyWithin(0, 1)
-    state[state.length - 1] = cipherBytes[i]
-  }
-
-  return output
-}
-
-const decryptAesCfb = (cipherWordArray, keyWordArray, ivWordArray, segmentSize) => {
-  const options = {
-    iv: ivWordArray,
-    mode: CryptoJS.mode.CFB,
-    padding: CryptoJS.pad.NoPadding,
-  }
-
-  if (typeof segmentSize === 'number') {
-    options.segmentSize = segmentSize
-  }
-
-  const decryptedWordArray = CryptoJS.AES.decrypt(
-    { ciphertext: cipherWordArray },
-    keyWordArray,
-    options,
-  )
-
-  return wordArrayToBytes(decryptedWordArray)
 }
 
 const toUtf8 = (bytes) => decoder.decode(bytes)
@@ -365,6 +303,9 @@ export class CfmsClient {
   }
 
   async downloadFileByTask(taskId, options = {}, auth = null) {
+    // Decryption now happens transparently in the Carapace gateway (Java GCM
+    // decryptor). The browser receives plaintext chunks and only has to
+    // concatenate them, so this method is just framing + integrity check.
     const strictIntegrity = options.strictIntegrity !== false
     const maxBytes = Number(options.maxBytes || 0)
     const frameId = await this.openRequestStream('download_file', { task_id: taskId }, auth)
@@ -387,111 +328,62 @@ export class CfmsClient {
 
     this.sendFrame(frameId, FRAME_TYPE_PROCESS, 'ready')
 
-    const encryptedChunks = []
-    let ivBase64 = ''
-    let aesKeyBase64 = ''
+    const plaintextChunks = []
     let receivedBytes = 0
 
     while (true) {
       const frame = await this.waitFrame(frameId, 60000)
       const payload = parseMaybeJson(frame.payload)
 
-      if (!payload?.action) {
+      if (!payload?.action && frame.frameType !== FRAME_TYPE_CONCLUSION) {
         continue
       }
 
-      if (payload.action === 'file_chunk') {
+      if (payload?.action === 'file_chunk') {
         const chunk = base64ToBytes(payload.data.chunk)
-        encryptedChunks.push(chunk)
+        plaintextChunks.push(chunk)
         receivedBytes += chunk.length
-        if (!ivBase64 && payload.data.iv) {
-          ivBase64 = payload.data.iv
-        }
         if (options.onProgress && expectedSize > 0) {
           options.onProgress({ loaded: Math.min(receivedBytes, expectedSize), total: expectedSize })
         }
-      } else if (payload.action === 'aes_key') {
-        aesKeyBase64 = payload.data.key
-        break
-      } else if (frame.frameType === FRAME_TYPE_CONCLUSION && payload.code) {
+      } else if (frame.frameType === FRAME_TYPE_CONCLUSION) {
+        // Carapace emits a synthetic 200 conclusion after the last plaintext
+        // chunk. CFMS (when bypassed) doesn't send one for downloads, but the
+        // proxy normalizes it. Either way we stop here.
+        if (payload && typeof payload.code === 'number' && payload.code !== 200) {
+          this.releaseStream(frameId)
+          throw new Error(`下载失败: ${payload.code} ${payload.message || ''}`.trim())
+        }
         break
       }
     }
 
     this.releaseStream(frameId)
 
-    if (!aesKeyBase64 || !ivBase64) {
-      throw new Error('下载数据不完整，缺少解密参数')
-    }
-
     if (typeof options.onChunksComplete === 'function') {
       options.onChunksComplete()
     }
 
-    const encryptedLength = encryptedChunks.reduce((sum, c) => sum + c.length, 0)
-    const encryptedAll = new Uint8Array(encryptedLength)
+    const totalLength = plaintextChunks.reduce((sum, c) => sum + c.length, 0)
+    const fileBytes = new Uint8Array(totalLength)
     let cursor = 0
-    for (const c of encryptedChunks) {
-      encryptedAll.set(c, cursor)
+    for (const c of plaintextChunks) {
+      fileBytes.set(c, cursor)
       cursor += c.length
     }
 
-    const cipherWordArray = bytesToWordArray(encryptedAll)
-    const keyWordArray = bytesToWordArray(base64ToBytes(aesKeyBase64))
-    const ivWordArray = bytesToWordArray(base64ToBytes(ivBase64))
+    const sliced = expectedSize > 0 ? fileBytes.slice(0, expectedSize) : fileBytes
 
     const expectedSha256 = String(transferMeta.data?.sha256 || '').toLowerCase()
-    const strategies = strictIntegrity
-      ? [
-      () => decryptCfb8Manual(encryptedAll, keyWordArray, base64ToBytes(ivBase64)),
-      () => decryptAesCfb(cipherWordArray, keyWordArray, ivWordArray, 8),
-      () => decryptAesCfb(cipherWordArray, keyWordArray, ivWordArray, 128),
-      () => decryptAesCfb(cipherWordArray, keyWordArray, ivWordArray, undefined),
-      ]
-      : [
-       () => decryptCfb8Manual(encryptedAll, keyWordArray, base64ToBytes(ivBase64)),
-      ]
-    let decryptedBytes = null
-    let fallbackBytes = null
-    
-    for (const runStrategy of strategies) {
-      try {
-        const candidate = runStrategy()
-        const sliced = candidate.slice(0, expectedSize)
-
-        if (!sliced.length && expectedSize > 0) {
-          continue
-        }
-
-        if (!strictIntegrity || !expectedSha256) {
-          decryptedBytes = sliced
-          break
-        }
-
-        const candidateSha256 = await sha256Hex(sliced)
-        if (candidateSha256.toLowerCase() === expectedSha256) {
-          decryptedBytes = sliced
-          break
-        }
-
-        if (!fallbackBytes) {
-          fallbackBytes = sliced
-        }
-      } catch {
-        // Try next strategy.
+    if (strictIntegrity && expectedSha256) {
+      const actual = await sha256Hex(sliced)
+      if (actual.toLowerCase() !== expectedSha256) {
+        throw new Error('文件完整性校验失败：SHA-256 不匹配')
       }
     }
 
-    if (!decryptedBytes && !strictIntegrity && fallbackBytes) {
-      decryptedBytes = fallbackBytes
-    }
-
-    if (!decryptedBytes) {
-      throw new Error('文件解密失败：无法通过完整性校验')
-    }
-
     return {
-      fileBytes: decryptedBytes,
+      fileBytes: sliced,
       fileSize: expectedSize,
       sha256: transferMeta.data?.sha256 || '',
     }
