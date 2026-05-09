@@ -303,9 +303,10 @@ export class CfmsClient {
   }
 
   async downloadFileByTask(taskId, options = {}, auth = null) {
-    // Decryption now happens transparently in the Carapace gateway (Java GCM
-    // decryptor). The browser receives plaintext chunks and only has to
-    // concatenate them, so this method is just framing + integrity check.
+    // End-to-end AES-256-GCM: CFMS streams ciphertext file_chunks then sends
+    // a single aes_key envelope with key/nonce/tag. We buffer ciphertext,
+    // decrypt in one shot via SubtleCrypto (GCM auth requires the full blob),
+    // and verify SHA-256 of the plaintext against transfer_file metadata.
     const strictIntegrity = options.strictIntegrity !== false
     const maxBytes = Number(options.maxBytes || 0)
     const frameId = await this.openRequestStream('download_file', { task_id: taskId }, auth)
@@ -328,32 +329,43 @@ export class CfmsClient {
 
     this.sendFrame(frameId, FRAME_TYPE_PROCESS, 'ready')
 
-    const plaintextChunks = []
-    let receivedBytes = 0
+    // Empty files: CFMS skips the encrypted-stream branch entirely.
+    if (expectedSize === 0) {
+      this.releaseStream(frameId)
+      return { fileBytes: new Uint8Array(0), fileSize: 0, sha256: transferMeta.data?.sha256 || '' }
+    }
+
+    const cipherChunks = []
+    let cipherBytes = 0
+    let keyEnvelope = null
 
     while (true) {
       const frame = await this.waitFrame(frameId, 60000)
-      const payload = parseMaybeJson(frame.payload)
 
-      if (!payload?.action && frame.frameType !== FRAME_TYPE_CONCLUSION) {
-        continue
+      if (frame.frameType === FRAME_TYPE_CONCLUSION) {
+        // CFMS does not normally send a conclusion for downloads. If we get
+        // one before aes_key, it's an error envelope (e.g. permission denied).
+        const errPayload = parseMaybeJson(frame.payload)
+        this.releaseStream(frameId)
+        const code = errPayload?.code
+        throw new Error(`下载失败: ${code ?? '?'} ${errPayload?.message || ''}`.trim())
       }
 
-      if (payload?.action === 'file_chunk') {
-        const chunk = base64ToBytes(payload.data.chunk)
-        plaintextChunks.push(chunk)
-        receivedBytes += chunk.length
+      const payload = parseMaybeJson(frame.payload)
+      if (!payload?.action) continue
+
+      if (payload.action === 'file_chunk') {
+        const cipher = base64ToBytes(payload.data.chunk)
+        cipherChunks.push(cipher)
+        cipherBytes += cipher.length
         if (options.onProgress && expectedSize > 0) {
-          options.onProgress({ loaded: Math.min(receivedBytes, expectedSize), total: expectedSize })
+          options.onProgress({
+            loaded: Math.min(cipherBytes, expectedSize),
+            total: expectedSize,
+          })
         }
-      } else if (frame.frameType === FRAME_TYPE_CONCLUSION) {
-        // Carapace emits a synthetic 200 conclusion after the last plaintext
-        // chunk. CFMS (when bypassed) doesn't send one for downloads, but the
-        // proxy normalizes it. Either way we stop here.
-        if (payload && typeof payload.code === 'number' && payload.code !== 200) {
-          this.releaseStream(frameId)
-          throw new Error(`下载失败: ${payload.code} ${payload.message || ''}`.trim())
-        }
+      } else if (payload.action === 'aes_key') {
+        keyEnvelope = payload.data
         break
       }
     }
@@ -364,26 +376,58 @@ export class CfmsClient {
       options.onChunksComplete()
     }
 
-    const totalLength = plaintextChunks.reduce((sum, c) => sum + c.length, 0)
-    const fileBytes = new Uint8Array(totalLength)
-    let cursor = 0
-    for (const c of plaintextChunks) {
-      fileBytes.set(c, cursor)
-      cursor += c.length
+    if (!keyEnvelope?.key || !keyEnvelope?.nonce || !keyEnvelope?.tag) {
+      throw new Error('AES 密钥信封缺失 key/nonce/tag')
     }
 
-    const sliced = expectedSize > 0 ? fileBytes.slice(0, expectedSize) : fileBytes
+    const key = base64ToBytes(keyEnvelope.key)
+    const nonce = base64ToBytes(keyEnvelope.nonce)
+    const tag = base64ToBytes(keyEnvelope.tag)
+
+    // SubtleCrypto AES-GCM expects ciphertext || tag concatenated; PyCryptodome
+    // gives them separately so we splice here.
+    const sealed = new Uint8Array(cipherBytes + tag.length)
+    let cursor = 0
+    for (const c of cipherChunks) {
+      sealed.set(c, cursor)
+      cursor += c.length
+    }
+    sealed.set(tag, cipherBytes)
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      key,
+      { name: 'AES-GCM' },
+      false,
+      ['decrypt'],
+    )
+
+    let plaintext
+    try {
+      const buffer = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: nonce, tagLength: tag.length * 8 },
+        cryptoKey,
+        sealed,
+      )
+      plaintext = new Uint8Array(buffer)
+    } catch (e) {
+      throw new Error(`GCM 解密失败（密钥/nonce/tag 不匹配或密文被篡改）: ${e.message}`)
+    }
+
+    const fileBytes = expectedSize > 0 && plaintext.length > expectedSize
+      ? plaintext.slice(0, expectedSize)
+      : plaintext
 
     const expectedSha256 = String(transferMeta.data?.sha256 || '').toLowerCase()
     if (strictIntegrity && expectedSha256) {
-      const actual = await sha256Hex(sliced)
+      const actual = await sha256Hex(fileBytes)
       if (actual.toLowerCase() !== expectedSha256) {
         throw new Error('文件完整性校验失败：SHA-256 不匹配')
       }
     }
 
     return {
-      fileBytes: sliced,
+      fileBytes,
       fileSize: expectedSize,
       sha256: transferMeta.data?.sha256 || '',
     }
