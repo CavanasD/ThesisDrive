@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { CfmsClient } from './services/cfmsClient'
 import WafAlert from './components/WafAlert.vue'
 import WafDashboard from './components/WafDashboard.vue'
+import VulnPanel from './components/VulnPanel.vue'
 
 import navDashboardIcon from './assets/icons/nav/dashboard.svg'
 import navFilesIcon from './assets/icons/nav/files.svg'
@@ -123,6 +124,7 @@ const NAV_DRIVE = [
 ]
 const NAV_DEFENDER_ONLY = [
   { key: 'defender', label: '防御者面板', icon: navDashboardIcon },
+  { key: 'vuln',     label: '漏洞开关',   icon: navDashboardIcon },
   { key: 'profile',  label: '我的',       icon: navProfileIcon },
 ]
 const toastIconByType = {
@@ -1630,6 +1632,11 @@ onBeforeUnmount(() => {
           <!-- Defender (admin/sysop only — inline WAF dashboard, no overlay) -->
           <section v-else-if="activeTab === 'defender'" key="defender" class="defender-host">
             <WafDashboard />
+          </section>
+
+          <!-- Vuln switches (admin/sysop only — runtime toggle for教学漏洞) -->
+          <section v-else-if="activeTab === 'vuln'" key="vuln" class="defender-host">
+            <VulnPanel />
           </section>
 
           <!-- Transfer -->
