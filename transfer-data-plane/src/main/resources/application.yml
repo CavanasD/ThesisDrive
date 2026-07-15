@@ -1,0 +1,57 @@
+server:
+  port: ${TRANSFER_PORT:8082}
+  shutdown: graceful
+
+spring:
+  application:
+    name: transfer-data-plane
+  codec:
+    max-in-memory-size: 256KB
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 2s
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+transfer:
+  chunk-size: 8388608
+  session-ttl: 24h
+  lock-ttl: 2h
+  temp-directory: ${TRANSFER_TEMP_DIRECTORY:./data/uploads}
+  cleanup-interval: 1h
+  completion-stream: ${TRANSFER_COMPLETION_STREAM:transfer:completed}
+  completion-stream-max-length: 10000
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    bucket: ${MINIO_BUCKET:thesis-drive}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  security:
+    public-key-location: ${TRANSFER_PUBLIC_KEY_LOCATION:classpath:keys/dev-transfer-public.pem}
+    issuer: ${TRANSFER_JWT_ISSUER:thesis-drive-core}
+    audience: ${TRANSFER_JWT_AUDIENCE:transfer-data-plane}
+    clock-skew: 30s
+  cors:
+    allowed-origins: ${TRANSFER_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:10086}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    com.thesis.transfer: INFO

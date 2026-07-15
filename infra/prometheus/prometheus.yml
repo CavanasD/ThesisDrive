@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: security-gateway
+    metrics_path: /actuator/prometheus
+    http_headers:
+      X-Admin-Token:
+        files: [/run/metrics-token/carapace-admin-token]
+    static_configs:
+      - targets: [security-gateway:8080]
+
+  - job_name: transfer-data-plane
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [transfer-data-plane:8082]

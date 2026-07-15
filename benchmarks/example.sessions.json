@@ -1,0 +1,21 @@
+{
+  "sessions": [
+    {
+      "name": "upload-100m-worker-01",
+      "operation": "upload",
+      "upload_url": "http://localhost:8082/api/v1/transfers/REPLACE_TASK_ID",
+      "ticket": "REPLACE_WITH_UPLOAD_TICKET",
+      "file": "fixtures/100MiB.bin",
+      "sha256": "REPLACE_WITH_FILE_SHA256"
+    },
+    {
+      "name": "download-100m-worker-01",
+      "operation": "download",
+      "download_url": "http://localhost:8082/api/v1/transfers/REPLACE_TASK_ID/content",
+      "ticket": "REPLACE_WITH_DOWNLOAD_TICKET",
+      "file": "fixtures/100MiB.bin",
+      "size": 104857600,
+      "sha256": "REPLACE_WITH_FILE_SHA256"
+    }
+  ]
+}

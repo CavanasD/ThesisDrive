@@ -1,7 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import AdminTokenControl from './AdminTokenControl.vue'
+import {
+  AdminApiError,
+  adminFetch,
+  carapaceBaseUrl,
+  getAdminToken,
+  requireAdminResponse,
+} from '../services/adminApi'
 
-const CARAPACE = import.meta.env.VITE_CARAPACE_URL || 'http://localhost:8080'
+const CARAPACE = carapaceBaseUrl()
 
 // Static metadata for each vulnerability switch. Names must match
 // VulnSwitchRegistry constants on the backend (ssrf / jwt-alg-none / cors / log4shell).
@@ -15,13 +23,28 @@ const VULN_META = {
 const switches = ref([])  // [{ name, enabled, label, desc }]
 const loading = ref(false)
 const errorMsg = ref('')
+const adminStatus = ref(getAdminToken() ? 'connecting' : 'locked')
+
+const handleAdminError = (error, prefix = '请求失败') => {
+  adminStatus.value = error instanceof AdminApiError && [401, 403].includes(error.status)
+    ? 'unauthorized'
+    : 'error'
+  errorMsg.value = `${prefix}: ${error.message}`
+}
 
 const load = async () => {
+  if (!getAdminToken()) {
+    adminStatus.value = 'locked'
+    switches.value = []
+    errorMsg.value = ''
+    return
+  }
   loading.value = true
+  adminStatus.value = 'connecting'
   errorMsg.value = ''
   try {
-    const res = await fetch(`${CARAPACE}/api/admin/vuln`)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const res = await adminFetch(`${CARAPACE}/api/admin/vuln`)
+    await requireAdminResponse(res)
     const data = await res.json()
     switches.value = Object.entries(data).map(([name, enabled]) => ({
       name,
@@ -29,8 +52,9 @@ const load = async () => {
       label: VULN_META[name]?.label ?? name,
       desc:  VULN_META[name]?.desc  ?? '',
     }))
+    adminStatus.value = 'connected'
   } catch (e) {
-    errorMsg.value = `加载失败: ${e.message}`
+    handleAdminError(e, '加载失败')
   } finally {
     loading.value = false
   }
@@ -39,20 +63,31 @@ const load = async () => {
 const toggle = async (sw) => {
   const next = !sw.enabled
   try {
-    const res = await fetch(`${CARAPACE}/api/admin/vuln/${encodeURIComponent(sw.name)}`, {
+    const res = await adminFetch(`${CARAPACE}/api/admin/vuln/${encodeURIComponent(sw.name)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: next }),
     })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    await requireAdminResponse(res)
     sw.enabled = next
+    adminStatus.value = 'connected'
   } catch (e) {
-    errorMsg.value = `切换 ${sw.name} 失败: ${e.message}`
+    handleAdminError(e, `切换 ${sw.name} 失败`)
   }
 }
 
 const allOn  = () => Promise.all(switches.value.filter(s => !s.enabled).map(toggle))
 const allOff = () => Promise.all(switches.value.filter(s =>  s.enabled).map(toggle))
+
+const onAdminTokenChange = (token) => {
+  if (!token) {
+    adminStatus.value = 'locked'
+    switches.value = []
+    errorMsg.value = ''
+    return
+  }
+  load()
+}
 
 onMounted(load)
 </script>
@@ -64,10 +99,11 @@ onMounted(load)
         <span class="vp-title">漏洞开关</span>
         <span class="vp-sub">Carapace · 教学攻防靶场（运行时热切换）</span>
       </div>
+      <AdminTokenControl :status="adminStatus" @change="onAdminTokenChange" />
       <div class="vp-actions">
         <button class="vp-btn" @click="load" :disabled="loading">{{ loading ? '加载中…' : '刷新' }}</button>
-        <button class="vp-btn vp-btn-on"  @click="allOn">全部开启</button>
-        <button class="vp-btn vp-btn-off" @click="allOff">全部关闭（加固模式）</button>
+        <button class="vp-btn vp-btn-on" :disabled="adminStatus !== 'connected'" @click="allOn">全部开启</button>
+        <button class="vp-btn vp-btn-off" :disabled="adminStatus !== 'connected'" @click="allOff">全部关闭（加固模式）</button>
       </div>
     </div>
 
@@ -214,5 +250,11 @@ onMounted(load)
   text-align: center;
   color: var(--muted);
   font-size: 13px;
+}
+
+@media (max-width: 940px) {
+  .vp-header { flex-wrap: wrap; }
+  .vp-titles { min-width: 220px; }
+  .vp-actions { width: 100%; justify-content: flex-end; }
 }
 </style>

@@ -1,0 +1,373 @@
+name: thesis-drive
+
+x-app-security: &app-security
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  transfer-keygen:
+    build:
+      context: infra/keygen
+    restart: "no"
+    network_mode: none
+    entrypoint: ["/bin/sh", "-c"]
+    command: >-
+      umask 077;
+      if [ ! -s /private/private.pem ]; then
+        openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /private/private.pem;
+      fi &&
+      openssl pkey -in /private/private.pem -pubout -out /public/public.pem &&
+      chown 10001:10001 /private/private.pem &&
+      chmod 0400 /private/private.pem &&
+      chmod 0444 /public/public.pem
+    volumes:
+      - transfer-private:/private
+      - transfer-public:/public
+
+  core-keygen:
+    build:
+      context: infra/keygen
+    restart: "no"
+    network_mode: none
+    entrypoint: ["/bin/sh", "-c"]
+    command: >-
+      set -eu;
+      umask 077;
+      if [ ! -s /tls/key.pem ] || [ ! -s /tls/cert.pem ]; then
+        rm -f /tls/key.pem /tls/cert.pem;
+        openssl req -x509 -nodes -newkey rsa:3072 -days 3650
+        -subj "/CN=drive-core"
+        -addext "subjectAltName=DNS:drive-core"
+        -addext "basicConstraints=critical,CA:FALSE"
+        -addext "keyUsage=critical,digitalSignature,keyEncipherment"
+        -addext "extendedKeyUsage=serverAuth"
+        -keyout /tls/key.pem -out /tls/cert.pem;
+      fi;
+      chown 10001:10001 /tls/key.pem;
+      chmod 0400 /tls/key.pem;
+      chmod 0444 /tls/cert.pem;
+      cp /tls/cert.pem /ca/cert.pem;
+      chmod 0444 /ca/cert.pem
+    volumes:
+      - core-tls:/tls
+      - core-ca:/ca
+
+  mysql:
+    image: mysql:8.4.10
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-this-root-password}
+      MYSQL_DATABASE: thesis_drive
+      MYSQL_USER: thesis
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-this-db-password}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: redis:7.4.9-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change-this-redis-password}
+    command: ["sh", "-c", 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+    volumes:
+      - redis-data:/data
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -qx PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    security_opt:
+      - no-new-privileges:true
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-10-15T17-29-55Z
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-thesis-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-this-minio-password}
+    volumes:
+      - minio-data:/data
+    networks: [backend]
+    security_opt:
+      - no-new-privileges:true
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    restart: "no"
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-c"]
+    command: >-
+      until mc alias set local http://minio:9000
+      "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 2; done;
+      mc mb --ignore-existing local/thesis-drive;
+      mc anonymous set none local/thesis-drive
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-thesis-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-this-minio-password}
+    networks: [backend]
+    security_opt:
+      - no-new-privileges:true
+
+  drive-core:
+    <<: *app-security
+    build:
+      context: .
+      dockerfile: infra/core/Dockerfile
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_DATABASE: thesis_drive
+      MYSQL_USER: thesis
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-this-db-password}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change-this-redis-password}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_BUCKET: thesis-drive
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-thesis-minio}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-change-this-minio-password}
+      CFMS_HTTP_TRANSFER_ENABLED: "true"
+      CFMS_TRANSFER_BASE_URL: ""
+      CFMS_TRANSFER_PRIVATE_KEY_FILE: /run/transfer-private/private.pem
+      CFMS_TRANSFER_JWT_ISSUER: thesis-drive-core
+      CFMS_TRANSFER_JWT_AUDIENCE: transfer-data-plane
+      CFMS_TRANSFER_COMPLETION_STREAM: transfer:completed
+      CFMS_TRANSFER_CONSUMER_GROUP: drive-core
+      CFMS_LEGACY_WEBSOCKET_TRANSFER: "false"
+      LAB_MODE: ${LAB_MODE:-false}
+      CFMS_VULN_SQLI_ENABLED: ${CFMS_VULN_SQLI_ENABLED:-false}
+      CFMS_VULN_RCE_ENABLED: ${CFMS_VULN_RCE_ENABLED:-false}
+      CFMS_VULN_AUTH_BYPASS_ENABLED: ${CFMS_VULN_AUTH_BYPASS_ENABLED:-false}
+      CFMS_VULN_PATH_TRAVERSAL_ENABLED: ${CFMS_VULN_PATH_TRAVERSAL_ENABLED:-false}
+      CFMS_VULN_IDOR_ENABLED: ${CFMS_VULN_IDOR_ENABLED:-false}
+    volumes:
+      - core-state:/app/state
+      - core-content:/app/src/content
+      - core-tls:/app/src/content/ssl
+      - transfer-private:/run/transfer-private:ro
+    networks: [backend]
+    depends_on:
+      transfer-keygen:
+        condition: service_completed_successfully
+      core-keygen:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 5104), 2).close()"]
+      interval: 10s
+      timeout: 4s
+      retries: 20
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+
+  transfer-data-plane:
+    <<: *app-security
+    build:
+      context: transfer-data-plane
+    environment:
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change-this-redis-password}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_BUCKET: thesis-drive
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-thesis-minio}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-change-this-minio-password}
+      TRANSFER_PUBLIC_KEY_LOCATION: file:/run/transfer-public/public.pem
+      TRANSFER_JWT_ISSUER: thesis-drive-core
+      TRANSFER_JWT_AUDIENCE: transfer-data-plane
+      TRANSFER_COMPLETION_STREAM: transfer:completed
+      TRANSFER_ALLOWED_ORIGINS: ${PUBLIC_ORIGINS:-https://localhost,https://127.0.0.1}
+    volumes:
+      - transfer-temp:/var/lib/transfer-data-plane/uploads
+      - transfer-public:/run/transfer-public:ro
+    networks: [backend, edge]
+    depends_on:
+      transfer-keygen:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8082/actuator/health"]
+      interval: 10s
+      timeout: 4s
+      retries: 20
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 768M
+
+  security-gateway:
+    <<: *app-security
+    build:
+      context: .
+      dockerfile: infra/carapace/Dockerfile
+    environment:
+      CFMS_INTERNAL_URL: wss://drive-core:5104
+      CFMS_TLS_CA_CERT: /run/cfms-tls/cert.pem
+      CARAPACE_ADMIN_TOKEN: ${CARAPACE_ADMIN_TOKEN:-change-this-admin-token}
+      CARAPACE_ALLOWED_ORIGINS: ${PUBLIC_ORIGINS:-https://localhost,https://127.0.0.1}
+      LAB_MODE: ${LAB_MODE:-false}
+      VULN_SSRF_ENABLED: ${VULN_SSRF_ENABLED:-false}
+      VULN_JWT_ALG_NONE_ENABLED: ${VULN_JWT_ALG_NONE_ENABLED:-false}
+      VULN_CORS_ENABLED: ${VULN_CORS_ENABLED:-false}
+      VULN_LOG4SHELL_ENABLED: ${VULN_LOG4SHELL_ENABLED:-false}
+      WAF_SQLI_ENABLED: ${WAF_SQLI_ENABLED:-true}
+      WAF_XSS_ENABLED: ${WAF_XSS_ENABLED:-true}
+      WAF_PATH_TRAVERSAL_ENABLED: ${WAF_PATH_TRAVERSAL_ENABLED:-true}
+      WAF_CMD_INJECTION_ENABLED: ${WAF_CMD_INJECTION_ENABLED:-true}
+      WAF_FILE_TYPE_ENABLED: ${WAF_FILE_TYPE_ENABLED:-true}
+    volumes:
+      - waf-logs:/app/waf-logs
+      - core-ca:/run/cfms-tls:ro
+    networks: [backend, edge]
+    depends_on:
+      core-keygen:
+        condition: service_completed_successfully
+      drive-core:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/actuator/health"]
+      interval: 10s
+      timeout: 4s
+      retries: 20
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 768M
+
+  metrics-token-init:
+    image: alpine:3.23
+    restart: "no"
+    network_mode: none
+    environment:
+      CARAPACE_ADMIN_TOKEN: ${CARAPACE_ADMIN_TOKEN:-change-this-admin-token}
+    entrypoint: ["/bin/sh", "-c"]
+    command: >-
+      set -eu;
+      test -n "$$CARAPACE_ADMIN_TOKEN";
+      umask 077;
+      printf '%s' "$$CARAPACE_ADMIN_TOKEN" > /token/carapace-admin-token;
+      chmod 0444 /token/carapace-admin-token
+    volumes:
+      - metrics-token:/token
+
+  prometheus:
+    image: prom/prometheus:v3.12.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - metrics-token:/run/metrics-token:ro
+      - prometheus-data:/prometheus
+    networks: [backend]
+    depends_on:
+      metrics-token-init:
+        condition: service_completed_successfully
+      security-gateway:
+        condition: service_healthy
+      transfer-data-plane:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+  grafana:
+    image: grafana/grafana:13.0.2
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-this-grafana-password}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-https://localhost/grafana/}
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks: [backend, edge]
+    depends_on: [prometheus]
+    security_opt:
+      - no-new-privileges:true
+
+  nginx:
+    <<: *app-security
+    build:
+      context: .
+      dockerfile: infra/nginx/Dockerfile
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+      - /var/cache/nginx:size=64m,mode=0755,uid=101,gid=101
+    ports:
+      - "80:8080"
+      - "443:8443"
+    networks: [public, edge]
+    depends_on:
+      security-gateway:
+        condition: service_healthy
+      transfer-data-plane:
+        condition: service_healthy
+      grafana:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://127.0.0.1:8443/"]
+      interval: 10s
+      timeout: 4s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+
+networks:
+  public:
+  edge:
+    internal: true
+  backend:
+    internal: true
+
+volumes:
+  mysql-data:
+  redis-data:
+  minio-data:
+  core-state:
+  core-content:
+  core-tls:
+  core-ca:
+  transfer-private:
+  transfer-public:
+  transfer-temp:
+  waf-logs:
+  metrics-token:
+  prometheus-data:
+  grafana-data:

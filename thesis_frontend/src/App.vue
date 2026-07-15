@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { CfmsClient } from './services/cfmsClient'
+import { buildShareUrl, ShareClient } from './services/shareClient'
+import { TransferClient, TransferPausedError } from './services/transferClient'
 import WafAlert from './components/WafAlert.vue'
 import WafDashboard from './components/WafDashboard.vue'
 import VulnPanel from './components/VulnPanel.vue'
@@ -29,6 +31,11 @@ function resolveCfmsWsUrl() {
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${protocol}//${window.location.host}/ws`
+}
+
+function resolveShareToken() {
+  if (typeof window === 'undefined') return ''
+  return new URLSearchParams(window.location.search).get('share')?.trim() || ''
 }
 
 //  Connection 
@@ -60,7 +67,7 @@ const session = reactive({
 
 //  Drive state 
 const drive = reactive({
-  totalBytes: 20 * 1024 * 1024 * 1024,
+  totalBytes: 0,
   usedBytes: 0,
   folders: [],
   files: [],
@@ -93,6 +100,22 @@ const wsUrlInput = ref(resolveCfmsWsUrl())
 //  Modals 
 const renameModal = reactive({ show: false, type: '', id: '', currentName: '', newName: '' })
 const createFolderModal = reactive({ show: false, name: '' })
+const shareModal = reactive({
+  show: false,
+  file: null,
+  password: '',
+  expiresAt: '',
+  maxDownloads: '',
+  shares: [],
+  loading: false,
+})
+const shareAccess = reactive({
+  token: resolveShareToken(),
+  password: '',
+  loading: false,
+  error: '',
+  started: false,
+})
 
 //  Search 
 const searchQuery = ref('')
@@ -169,6 +192,12 @@ const twoFaState = reactive({
 
 //  Computed 
 const isAuthed = computed(() => Boolean(session.username && session.token))
+const selectedFileShares = computed(() => {
+  const documentId = shareModal.file?.id
+  return documentId
+    ? shareModal.shares.filter((share) => share.document_id === documentId)
+    : []
+})
 // Sysop group is the cloud-drive's admin role. Anyone in this group is treated
 // as a defender/management user — they get the WAF panel and no drive UI.
 const isAdmin  = computed(() => session.groups.includes('sysop'))
@@ -358,6 +387,8 @@ const client = new CfmsClient({
     showWafAlert.value = true
   },
 })
+const transferClient = new TransferClient({ controlClient: client })
+const shareClient = new ShareClient({ controlClient: client })
 
 const runBusy = async (fn) => {
   busy.value = true
@@ -391,24 +422,34 @@ const callAction = async (action, data = {}, useAuth = true, throwOnError = true
 // ── Load functions ────────────────────────────────────────────────────────────
 const loadServerInfo = async () => {
   const response = await callAction('server_info', {}, false)
-  pushLog(`服务信息已刷新: 协议 ${response.data.protocol_version}`, 'info')
+  const serverInfo = client.applyServerInfo(response)
+  transferClient.setCapabilities(serverInfo.capabilities)
+  const transferMode = transferClient.supportsHttpTransfer() ? 'HTTP 流式数据面' : 'WSS 兼容数据面'
+  pushLog(`服务信息已刷新: 协议 ${response.data.protocol_version} · ${transferMode}`, 'info')
 }
 
-// Lists "the user's drive root" — for sysop that's the global root, for a
-// regular user that's their /home/<username>. Used to populate the dashboard
-// usage ring and the recent-files panel so they reflect the user's own space.
+const refreshQuota = async () => {
+  const response = await callAction('get_quota', {}, true)
+  const diskQuota = Number(response.data?.disk_quota ?? 0)
+  const diskUsed = Number(response.data?.disk_used ?? 0)
+  session.diskQuota = Number.isFinite(diskQuota) ? Math.max(0, diskQuota) : 0
+  session.diskUsed = Number.isFinite(diskUsed) ? Math.max(0, diskUsed) : 0
+  drive.totalBytes = session.diskQuota
+  drive.usedBytes = session.diskUsed
+}
+
+// Lists the user's drive root only to populate recent files. Capacity comes
+// from get_quota because files in nested directories must also be counted.
 const refreshRootStats = async () => {
   const folderId = session.homeDirectoryId || null
   try {
     const resp = await callAction('list_directory', { folder_id: folderId }, true)
     const files = resp.data.documents || []
-    drive.usedBytes = files.reduce((sum, item) => sum + Number(item.size || 0), 0)
     drive.recentFiles = pickRecentByModified(files, 20)
   } catch {
     // Defensive: if the user has no read access to their landing folder
     // (shouldn't happen — but if it does, don't leak previous state).
     drive.recentFiles = []
-    drive.usedBytes = 0
   }
 }
 
@@ -418,14 +459,17 @@ const loadFileList = async (folderId = null) => {
   drive.files = response.data.documents || []
   parentFolderId.value = response.data.parent_id || null
   currentFolderId.value = folderId
-  // Refresh "recent files" whenever we're at the user's drive root —
-  // null for sysop (global root), home_directory_id for regular users.
+  // Refresh recent files at the user's root without treating direct children
+  // as the complete (recursive) quota usage.
   const isAtDriveRoot = folderId === (session.homeDirectoryId || null)
   if (isAtDriveRoot) {
-    drive.usedBytes = drive.files.reduce((sum, item) => sum + Number(item.size || 0), 0)
     drive.recentFiles = pickRecentByModified(drive.files, 20)
   }
   filePage.value = 1
+}
+
+const refreshCurrentFolderAndQuota = async () => {
+  await Promise.all([loadFileList(currentFolderId.value), refreshQuota()])
 }
 
 const loadRecycle = async () => {
@@ -444,8 +488,8 @@ const loadRecycle = async () => {
 }
 
 const loadDriveOverview = async () => {
-  const tasks = [loadFileList(currentFolderId.value), loadRecycle()]
-  if (currentFolderId.value !== null) tasks.push(refreshRootStats())
+  const tasks = [loadFileList(currentFolderId.value), loadRecycle(), refreshQuota()]
+  if (currentFolderId.value !== (session.homeDirectoryId || null)) tasks.push(refreshRootStats())
   await Promise.all(tasks)
   lastSyncAt.value = Date.now() / 1000
 }
@@ -494,6 +538,15 @@ const downloadFile = async (file) => {
     const taskId = docResp.data?.task_data?.task_id
     if (!taskId) throw new Error('下载任务创建失败')
 
+    if (transferClient.supportsHttpTransfer()) {
+      await transferClient.nativeDownload(taskId, file.title, { auth: authHeader() })
+      const t = transfers.value.find(t => t.id === id)
+      if (t) { t.status = 'done'; t.loaded = t.total }
+      pushToast(`${file.title} 已交给浏览器流式下载`, 'success')
+      pushLog(`HTTP Range 下载已开始: ${file.title}`, 'success')
+      return
+    }
+
     const result = await client.downloadFileByTask(
       taskId,
       {
@@ -536,7 +589,18 @@ const openUploadPicker = () => uploadFileInputEl.value?.click()
 
 const uploadOneFile = async (file) => {
   const id = ++transferSeq.value
-  transfers.value.unshift({ id, type: 'upload', name: file.name, loaded: 0, total: file.size, status: 'active' })
+  const transfer = {
+    id,
+    type: 'upload',
+    name: file.name,
+    loaded: 0,
+    total: file.size,
+    status: 'active',
+    taskId: '',
+    file,
+    httpTransfer: transferClient.supportsHttpTransfer(),
+  }
+  transfers.value.unshift(transfer)
 
   try {
     const createResp = await callAction('create_document', {
@@ -546,24 +610,65 @@ const uploadOneFile = async (file) => {
     }, true)
     const taskId = createResp.data?.task_data?.task_id
     if (!taskId) throw new Error('上传任务创建失败')
+    transfer.taskId = taskId
 
-    const uploadResp = await client.uploadFileByTask(taskId, file, authHeader(), ({ loaded, total }) => {
-      const t = transfers.value.find(t => t.id === id)
-      if (t) { t.loaded = loaded; t.total = total }
-    })
+    const onProgress = ({ loaded, total }) => {
+      transfer.loaded = loaded
+      transfer.total = total
+    }
+    const uploadResp = transfer.httpTransfer
+      ? await transferClient.uploadFile(taskId, file, { auth: authHeader(), onProgress })
+      : await client.uploadFileByTask(taskId, file, authHeader(), onProgress)
     if (uploadResp?.code >= 400) throw new Error(uploadResp.message || '上传失败')
 
-    const t = transfers.value.find(t => t.id === id)
-    if (t) { t.status = 'done'; t.loaded = t.total }
+    transfer.status = 'done'
+    transfer.loaded = transfer.total
     pushToast(`${file.name} 上传完成`, 'success')
     pushLog(`上传完成: ${file.name}`, 'success')
-    await loadFileList(currentFolderId.value)
+    await refreshCurrentFolderAndQuota()
   } catch (err) {
-    const t = transfers.value.find(t => t.id === id)
-    if (t) { t.status = 'error'; t.error = err.message }
+    if (err instanceof TransferPausedError) {
+      transfer.status = 'paused'
+      pushLog(`上传已暂停: ${file.name}`, 'warning')
+      return
+    }
+    transfer.status = 'error'
+    transfer.error = err.message
     throw err
   }
 }
+
+const pauseTransfer = (transfer) => {
+  if (!transfer.httpTransfer || !transfer.taskId) return
+  transferClient.pause(transfer.taskId)
+}
+
+const resumeTransfer = (transfer) => runSafe(async () => {
+  if (!transfer.file || !transfer.taskId) throw new Error('请重新选择原文件以继续上传')
+  transfer.status = 'active'
+  transfer.error = ''
+  try {
+    await transferClient.resumeUpload(transfer.taskId, transfer.file, {
+      auth: authHeader(),
+      onProgress: ({ loaded, total }) => {
+        transfer.loaded = loaded
+        transfer.total = total
+      },
+    })
+    transfer.status = 'done'
+    transfer.loaded = transfer.total
+    pushToast(`${transfer.name} 续传完成`, 'success')
+    await refreshCurrentFolderAndQuota()
+  } catch (err) {
+    if (err instanceof TransferPausedError) {
+      transfer.status = 'paused'
+      return
+    }
+    transfer.status = 'error'
+    transfer.error = err.message
+    throw err
+  }
+})
 
 const handleFilesUpload = async (files) => {
   if (activeTab.value !== 'files') activeTab.value = 'transfer'
@@ -590,7 +695,7 @@ const onFileDrop = (e) => {
 }
 
 const clearDoneTransfers = () => {
-  transfers.value = transfers.value.filter(t => t.status === 'active' || t.status === 'decrypting')
+  transfers.value = transfers.value.filter(t => ['active', 'decrypting', 'paused', 'error'].includes(t.status))
 }
 
 const toggleRecycle = () => {
@@ -613,7 +718,118 @@ const deleteFile = async (file) => {
   await callAction('delete_document', { document_id: file.id }, true)
   pushToast(`${file.title} 已移入回收站`, 'success')
   pushLog(`删除: ${file.title}`, 'info')
-  await loadFileList(currentFolderId.value)
+  await refreshCurrentFolderAndQuota()
+}
+
+const loadShareLinks = async () => {
+  shareModal.loading = true
+  try {
+    shareModal.shares = await shareClient.listShareLinks(authHeader())
+  } finally {
+    shareModal.loading = false
+  }
+}
+
+const closeShareModal = () => {
+  shareModal.show = false
+  shareModal.file = null
+  shareModal.password = ''
+  shareModal.expiresAt = ''
+  shareModal.maxDownloads = ''
+  shareModal.shares = []
+}
+
+const openShareModal = async (file) => {
+  shareModal.file = file
+  shareModal.password = ''
+  shareModal.expiresAt = ''
+  shareModal.maxDownloads = ''
+  shareModal.show = true
+  await loadShareLinks()
+}
+
+const submitCreateShare = async () => {
+  await runBusy(async () => {
+    if (!shareModal.file?.id) throw new Error('未选择要分享的文件')
+
+    let expiresAt = null
+    if (shareModal.expiresAt) {
+      const timestamp = Date.parse(shareModal.expiresAt)
+      if (!Number.isFinite(timestamp)) throw new Error('失效时间格式无效')
+      expiresAt = Math.floor(timestamp / 1000)
+      if (expiresAt <= Date.now() / 1000) throw new Error('失效时间必须晚于当前时间')
+    }
+
+    let maxDownloads = null
+    if (shareModal.maxDownloads !== '') {
+      maxDownloads = Number(shareModal.maxDownloads)
+      if (!Number.isInteger(maxDownloads) || maxDownloads < 1) {
+        throw new Error('下载次数必须是正整数')
+      }
+    }
+
+    await shareClient.createShareLink(shareModal.file.id, {
+      password: shareModal.password || null,
+      expiresAt,
+      maxDownloads,
+    }, authHeader())
+    shareModal.password = ''
+    shareModal.expiresAt = ''
+    shareModal.maxDownloads = ''
+    await loadShareLinks()
+    pushToast('分享链接已创建', 'success')
+  })
+}
+
+const copyShareLink = async (share) => {
+  if (!share?.token) throw new Error('分享令牌为空')
+  if (!navigator.clipboard?.writeText) throw new Error('浏览器不支持安全剪贴板，请使用 HTTPS')
+  await navigator.clipboard.writeText(buildShareUrl(share.token, window.location.href))
+  pushToast('分享链接已复制', 'success')
+}
+
+const revokeShareLink = async (share) => {
+  await shareClient.revokeShareLink(share.token, authHeader())
+  await loadShareLinks()
+  pushToast('分享链接已撤销', 'success')
+}
+
+const closeShareLanding = () => {
+  shareAccess.token = ''
+  shareAccess.password = ''
+  shareAccess.error = ''
+  shareAccess.started = false
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('share')
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+  }
+  if (isAuthed.value) runSafe(loadDriveOverview)
+}
+
+const downloadSharedFile = async () => {
+  if (!shareAccess.token || shareAccess.loading) return
+  shareAccess.loading = true
+  shareAccess.error = ''
+  try {
+    await connectWs()
+    const prepared = await shareClient.prepareShareDownload(
+      shareAccess.token,
+      shareAccess.password || null,
+    )
+    await transferClient.nativeDownloadPrepared(
+      prepared,
+      prepared.filename || '共享文件',
+    )
+    shareAccess.password = ''
+    shareAccess.started = true
+    pushLog('匿名分享下载已交给浏览器', 'success')
+  } catch (error) {
+    shareAccess.error = error?.message || '分享下载失败'
+    pushLog(`匿名分享下载失败: ${shareAccess.error}`, 'warning')
+  } finally {
+    shareAccess.loading = false
+  }
 }
 
 const openRename = (type, item) => {
@@ -701,7 +917,7 @@ const restoreRecycleDoc = async (documentId) => {
 const purgeRecycleDoc = async (documentId) => {
   await callAction('purge_document', { document_id: documentId }, true)
   pushToast('文档已永久删除', 'warning')
-  await loadRecycle()
+  await Promise.all([loadRecycle(), refreshQuota()])
 }
 
 const restoreRecycleFolder = async (folderId) => {
@@ -714,7 +930,7 @@ const restoreRecycleFolder = async (folderId) => {
 const purgeRecycleFolder = async (folderId) => {
   await callAction('purge_directory', { folder_id: folderId }, true)
   pushToast('目录已永久删除', 'warning')
-  await loadRecycle()
+  await Promise.all([loadRecycle(), refreshQuota()])
 }
 
 // ── File list actions ─────────────────────────────────────────────────────────
@@ -738,7 +954,7 @@ const handleFileAction = async (file, actionKey) => {
   } else if (actionKey === 'preview') {
     pushToast('预览功能开发中', 'info')
   } else if (actionKey === 'share') {
-    pushToast('分享功能开发中', 'info')
+    await runSafe(() => openShareModal(file))
   }
 }
 
@@ -797,6 +1013,8 @@ const handleLogin = async () => {
     session.homeDirectoryId = response.data.home_directory_id || null
     session.diskQuota = response.data.disk_quota ?? null
     session.diskUsed = Number(response.data.disk_used || 0)
+    drive.totalBytes = Number(session.diskQuota || 0)
+    drive.usedBytes = session.diskUsed
 
     // sysop is a defender-only role; land them on the WAF panel directly so
     // they never see the cloud-drive surface (and to make the role obvious).
@@ -816,7 +1034,7 @@ const handleLogin = async () => {
     pushLog('登录成功', 'success')
     pushToast('登录成功', 'success')
 
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
       username: session.username,
       token: session.token,
       nickname: session.nickname,
@@ -879,7 +1097,7 @@ const submitRegister = async () => {
 }
 
 const logout = () => {
-  localStorage.removeItem(SESSION_STORAGE_KEY)
+  sessionStorage.removeItem(SESSION_STORAGE_KEY)
   session.username = ''
   session.token = ''
   session.nickname = ''
@@ -897,6 +1115,7 @@ const logout = () => {
   drive.recentFiles = []
   drive.recycleFolders = []
   drive.recycleFiles = []
+  drive.totalBytes = 0
   drive.usedBytes = 0
   activeTab.value = 'dashboard'
   selectedRecentFileId.value = ''
@@ -1200,7 +1419,7 @@ const submitAvatarUpload = async () => {
     const blob = await buildAvatarBlob()
     const file = new File([blob], `avatar-${Date.now()}.png`, { type: 'image/png' })
     applyAvatarUrl(URL.createObjectURL(blob))
-    const createResp = await callAction('create_document', { folder_id: null, title: file.name, inherit_parent: true }, true)
+    const createResp = await callAction('create_document', { folder_id: session.homeDirectoryId, title: file.name, inherit_parent: true }, true)
     const taskId = createResp.data?.task_data?.task_id
     const documentId = createResp.data?.document_id
     if (!taskId || !documentId) throw new Error('头像上传任务创建失败')
@@ -1257,29 +1476,34 @@ const onNavPointerDown = (e) => {
 onMounted(() => {
   const savedThemeMode = localStorage.getItem(THEME_MODE_KEY)
   if (savedThemeMode === 'dark' || savedThemeMode === 'light') themeMode.value = savedThemeMode
+  // Remove the legacy persistent auth token. Account credentials now live for
+  // this tab only; share tokens and passwords are never persisted.
+  localStorage.removeItem(SESSION_STORAGE_KEY)
 
   try {
-    const saved = localStorage.getItem(SESSION_STORAGE_KEY)
+    const saved = sessionStorage.getItem(SESSION_STORAGE_KEY)
     if (saved) {
       const parsed = JSON.parse(saved)
       if (parsed.token && parsed.exp && parsed.exp > Date.now() / 1000) {
         Object.assign(session, parsed)
+        drive.totalBytes = Number(session.diskQuota || 0)
+        drive.usedBytes = Number(session.diskUsed || 0)
         // Restore the user's drive landing folder so a page refresh lands
         // them where they were — sysop at root, regular user at home.
         if (!session.groups?.includes('sysop')) {
           currentFolderId.value = session.homeDirectoryId || null
         }
       } else {
-        localStorage.removeItem(SESSION_STORAGE_KEY)
+        sessionStorage.removeItem(SESSION_STORAGE_KEY)
       }
     }
-  } catch { localStorage.removeItem(SESSION_STORAGE_KEY) }
+  } catch { sessionStorage.removeItem(SESSION_STORAGE_KEY) }
 
   expandServicePillThenAutoCollapse()
   runSafe(async () => {
     await connectWs()
     await loadServerInfo()
-    if (isAuthed.value) {
+    if (isAuthed.value && !shareAccess.token) {
       try {
         await loadDriveOverview()
         runSafe(async () => {
@@ -1310,8 +1534,39 @@ onBeforeUnmount(() => {
     <div class="bg-glow"></div>
 
     <Transition name="shell-switch" mode="out-in">
+      <!-- ── Anonymous share shell ── -->
+      <main v-if="shareAccess.token" key="share" class="login-shell">
+        <section class="auth-panel centered share-landing">
+          <span class="share-landing-badge">受控分享</span>
+          <h1>下载共享文件</h1>
+          <p class="subtitle">下载票据短期有效，文件由 HTTP Range 数据面直接流式传输。</p>
+          <label>
+            分享密码（如有）
+            <input
+              v-model="shareAccess.password"
+              type="password"
+              autocomplete="off"
+              placeholder="无密码可留空"
+              @keyup.enter="downloadSharedFile"
+            />
+          </label>
+          <p v-if="shareAccess.error" class="share-error" role="alert">{{ shareAccess.error }}</p>
+          <p v-if="shareAccess.started" class="share-success">下载已交给浏览器，可在下载列表中查看进度。</p>
+          <div class="actions">
+            <button class="ghost" type="button" @click="closeShareLanding">
+              {{ isAuthed ? '返回我的网盘' : '返回登录' }}
+            </button>
+            <button
+              type="button"
+              :disabled="shareAccess.loading || !isConnected"
+              @click="downloadSharedFile"
+            >{{ shareAccess.loading ? '正在签发票据…' : '开始流式下载' }}</button>
+          </div>
+        </section>
+      </main>
+
       <!-- ── Login shell ── -->
-      <main v-if="!isAuthed" key="auth" class="login-shell">
+      <main v-else-if="!isAuthed" key="auth" class="login-shell">
         <section class="auth-panel centered" :class="{ expanded: authMode === 'register' }">
           <h1>登录 Thesis Drive</h1>
           <p class="subtitle">个人网盘入口</p>
@@ -1427,6 +1682,7 @@ onBeforeUnmount(() => {
                   </div>
                   <div v-if="selectedRecentFileId === f.id" class="recent-inline-actions" @click.stop>
                     <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleRecentAction(f, 'download'))">⤓</button>
+                    <button class="ghost icon-btn" title="分享" @click="runSafe(() => handleRecentAction(f, 'share'))">⌁</button>
                     <button class="ghost icon-btn" title="重命名" @click="handleRecentAction(f, 'rename')">✎</button>
                     <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleRecentAction(f, 'recycle'))">⌫</button>
                   </div>
@@ -1505,6 +1761,7 @@ onBeforeUnmount(() => {
                       <span class="file-title">{{ file.title }}</span>
                       <div class="file-hover-actions" @click.stop>
                         <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleFileAction(file, 'download'))">⤓</button>
+                        <button class="ghost icon-btn" title="分享" @click="runSafe(() => handleFileAction(file, 'share'))">⌁</button>
                         <button class="ghost icon-btn" title="重命名" @click="handleFileAction(file, 'rename')">✎</button>
                         <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleFileAction(file, 'recycle'))">⌫</button>
                       </div>
@@ -1565,6 +1822,7 @@ onBeforeUnmount(() => {
                       <span class="file-title">{{ file.title }}</span>
                       <div class="file-hover-actions" @click.stop>
                         <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleFileAction(file, 'download'))">⤓</button>
+                        <button class="ghost icon-btn" title="分享" @click="runSafe(() => handleFileAction(file, 'share'))">⌁</button>
                         <button class="ghost icon-btn" title="重命名" @click="handleFileAction(file, 'rename')">✎</button>
                         <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleFileAction(file, 'recycle'))">⌫</button>
                       </div>
@@ -1655,9 +1913,22 @@ onBeforeUnmount(() => {
                   <span class="transfer-status" :class="t.status">
                     <template v-if="t.status === 'active'">{{ formatSize(t.loaded) }} / {{ formatSize(t.total) }}</template>
                     <template v-else-if="t.status === 'decrypting'">解密中...</template>
+                    <template v-else-if="t.status === 'paused'">已暂停 · {{ formatSize(t.loaded) }}</template>
                     <template v-else-if="t.status === 'done'">完成 · {{ formatSize(t.total) }}</template>
                     <template v-else>{{ t.error || '失败' }}</template>
                   </span>
+                  <button
+                    v-if="t.type === 'upload' && t.httpTransfer && t.status === 'active'"
+                    class="transfer-action"
+                    type="button"
+                    @click="pauseTransfer(t)"
+                  >暂停</button>
+                  <button
+                    v-else-if="t.type === 'upload' && t.httpTransfer && ['paused', 'error'].includes(t.status) && t.file && t.taskId"
+                    class="transfer-action"
+                    type="button"
+                    @click="resumeTransfer(t)"
+                  >{{ t.status === 'error' ? '重试/续传' : '继续' }}</button>
                 </div>
                 <div class="transfer-bar-track">
                   <div
@@ -1809,7 +2080,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- ── Transfer badge on nav ── -->
-    <div v-if="activeTransferCount > 0 && activeTab !== 'transfer'" class="transfer-badge" @click="changeTab('transfer')">
+    <div v-if="activeTransferCount > 0 && activeTab !== 'transfer' && !shareAccess.token" class="transfer-badge" @click="changeTab('transfer')">
       {{ activeTransferCount }}
     </div>
 
@@ -1881,6 +2152,64 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- ── Share modal ── -->
+    <div v-if="shareModal.show" class="overlay" @click.self="closeShareModal">
+      <div class="modal-card share-modal-card">
+        <div class="modal-head">
+          <div>
+            <h3>分享文件</h3>
+            <p class="subtitle">{{ shareModal.file?.title }}</p>
+          </div>
+          <button class="ghost" type="button" @click="closeShareModal">关闭</button>
+        </div>
+
+        <div class="share-create-grid">
+          <label>
+            访问密码（可选）
+            <input v-model="shareModal.password" type="password" autocomplete="new-password" placeholder="留空即无需密码" />
+          </label>
+          <label>
+            失效时间（可选）
+            <input v-model="shareModal.expiresAt" type="datetime-local" />
+          </label>
+          <label>
+            最大下载次数（可选）
+            <input v-model="shareModal.maxDownloads" type="number" min="1" step="1" placeholder="不限" />
+          </label>
+          <button type="button" :disabled="busy || shareModal.loading" @click="runSafe(submitCreateShare)">
+            创建分享链接
+          </button>
+        </div>
+
+        <div class="share-list-head">
+          <h4>该文件的分享链接</h4>
+          <button class="ghost" type="button" :disabled="shareModal.loading" @click="runSafe(loadShareLinks)">刷新</button>
+        </div>
+        <ul class="share-list">
+          <li v-for="share in selectedFileShares" :key="share.token" class="share-list-item">
+            <div class="share-list-main">
+              <div class="share-status-row">
+                <span class="status-pill" :class="share.active ? 'status-on' : 'status-off'">
+                  {{ share.active ? '有效' : '不可用' }}
+                </span>
+                <span v-if="share.password_required" class="share-meta-chip">有密码</span>
+              </div>
+              <small class="subtitle">
+                下载 {{ share.download_count }} / {{ share.max_downloads ?? '不限' }}
+                · 到期 {{ share.expires_at ? formatDateTime(share.expires_at) : '永久' }}
+              </small>
+            </div>
+            <div class="share-list-actions">
+              <button v-if="share.active" class="ghost" type="button" @click="runSafe(() => copyShareLink(share))">复制链接</button>
+              <button v-if="!share.revoked" class="danger" type="button" @click="runSafe(() => revokeShareLink(share))">撤销</button>
+            </div>
+          </li>
+          <li v-if="!shareModal.loading && !selectedFileShares.length" class="share-list-empty">还没有分享链接</li>
+          <li v-if="shareModal.loading" class="share-list-empty">正在读取分享链接…</li>
+        </ul>
+      </div>
+    </div>
+
     <!-- ── Avatar crop modal ── -->
     <input ref="avatarFileInput" type="file" accept="image/*" class="hidden-input" @change="onAvatarFileChange" />
     <div v-if="showAvatarCropModal" class="overlay" @click.self="closeAvatarCrop">
@@ -1906,7 +2235,7 @@ onBeforeUnmount(() => {
     <!-- ── Nav ── -->
     <Transition name="nav-rise">
       <nav
-        v-if="isAuthed"
+        v-if="isAuthed && !shareAccess.token"
         ref="navRef"
         class="bottom-nav"
         :class="{ 'nav-pressing': navGlow.pressing }"
@@ -1930,7 +2259,7 @@ onBeforeUnmount(() => {
 
     <!-- ── Theme FAB ── -->
     <button
-      v-if="isAuthed"
+      v-if="isAuthed && !shareAccess.token"
       class="theme-fab"
       :aria-label="isDarkMode ? '切换到日间模式' : '切换到暗夜模式'"
       @click="toggleThemeMode"
