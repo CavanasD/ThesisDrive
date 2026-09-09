@@ -1,7 +1,7 @@
 const FRAME_TYPE_PROCESS = 0
 const FRAME_TYPE_CONCLUSION = 1
 
-export const CFMS_PROTOCOL_VERSION = 15
+export const CFMS_PROTOCOL_VERSION = 26
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -90,7 +90,7 @@ export class CfmsClient {
 
       ws.onmessage = (event) => {
         // Blob.arrayBuffer() is asynchronous and may complete out of order.
-        // Chain every conversion so protocol-15 frames stay FIFO per socket.
+        // Chain every conversion so protocol-26 frames stay FIFO per socket.
         this.incomingFrameChain = this.incomingFrameChain
           .then(async () => {
             const arrayBuffer =
@@ -116,7 +116,7 @@ export class CfmsClient {
   }
 
   getNextFrameId() {
-    // Protocol 15 reserves odd stream IDs for the client and even IDs for the
+    // Protocol 26 reserves odd stream IDs for the client and even IDs for the
     // server. Wrap safely before uint32 overflow and never reuse a live stream.
     for (let attempts = 0; attempts < 0x80000000; attempts += 1) {
       const id = this.nextFrameId
