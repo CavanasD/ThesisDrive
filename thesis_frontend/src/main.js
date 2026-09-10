@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
 import './style.css'
-import App from './App.vue'
+import { resolveRootComponent } from './routeApp'
 
-createApp(App).mount('#app')
+createApp(resolveRootComponent(window.location.pathname)).mount('#app')
