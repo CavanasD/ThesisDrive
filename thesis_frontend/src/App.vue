@@ -6,6 +6,7 @@ import { TransferClient, TransferPausedError } from './services/transferClient'
 import WafAlert from './components/WafAlert.vue'
 import WafDashboard from './components/WafDashboard.vue'
 import VulnPanel from './components/VulnPanel.vue'
+import LabWorkflowPanel from './components/LabWorkflowPanel.vue'
 
 import navDashboardIcon from './assets/icons/nav/dashboard.svg'
 import navFilesIcon from './assets/icons/nav/files.svg'
@@ -100,6 +101,8 @@ const wsUrlInput = ref(resolveCfmsWsUrl())
 //  Modals 
 const renameModal = reactive({ show: false, type: '', id: '', currentName: '', newName: '' })
 const createFolderModal = reactive({ show: false, name: '' })
+const moveModal = reactive({ show: false, file: null, targetFolderId: '', destinations: [], loading: false })
+const revisionModal = reactive({ show: false, file: null, revisions: [], loading: false })
 const shareModal = reactive({
   show: false,
   file: null,
@@ -148,6 +151,7 @@ const NAV_DRIVE = [
 const NAV_DEFENDER_ONLY = [
   { key: 'defender', label: '防御者面板', icon: navDashboardIcon },
   { key: 'vuln',     label: '漏洞开关',   icon: navDashboardIcon },
+  { key: 'lab',      label: '教学编排',   icon: navFilesIcon },
   { key: 'profile',  label: '我的',       icon: navProfileIcon },
 ]
 const toastIconByType = {
@@ -721,6 +725,79 @@ const deleteFile = async (file) => {
   await refreshCurrentFolderAndQuota()
 }
 
+const openMoveModal = async (file) => {
+  moveModal.file = file
+  moveModal.destinations = []
+  moveModal.targetFolderId = ''
+  moveModal.loading = true
+  moveModal.show = true
+  try {
+    const rootId = session.homeDirectoryId || ROOT_ID
+    const currentParentId = file.parent_id || currentFolderId.value
+    const queue = [{ id: rootId, name: '主目录', depth: 0 }]
+    const visited = new Set()
+    while (queue.length && moveModal.destinations.length < 100) {
+      const folder = queue.shift()
+      if (visited.has(folder.id)) continue
+      visited.add(folder.id)
+      if (folder.id !== currentParentId) moveModal.destinations.push(folder)
+      const response = await callAction('list_directory', { folder_id: folder.id }, true)
+      for (const child of response.data.folders || []) {
+        queue.push({ id: child.id, name: child.name, depth: folder.depth + 1 })
+      }
+    }
+    moveModal.targetFolderId = moveModal.destinations[0]?.id || ''
+    if (!moveModal.targetFolderId) throw new Error('没有可用的目标文件夹')
+  } catch (error) {
+    moveModal.show = false
+    throw error
+  } finally {
+    moveModal.loading = false
+  }
+}
+
+const submitMoveFile = async () => {
+  await runBusy(async () => {
+    if (!moveModal.file?.id || !moveModal.targetFolderId) throw new Error('请选择目标文件夹')
+    await callAction('move_document', {
+      document_id: moveModal.file.id,
+      target_folder_id: moveModal.targetFolderId,
+    }, true)
+    pushToast(`${moveModal.file.title} 已移动`, 'success')
+    moveModal.show = false
+    await refreshCurrentFolderAndQuota()
+  })
+}
+
+const openRevisionModal = async (file) => {
+  revisionModal.file = file
+  revisionModal.revisions = []
+  revisionModal.loading = true
+  revisionModal.show = true
+  try {
+    const response = await callAction('list_revisions', { document_id: file.id, limit: 50 }, true)
+    revisionModal.revisions = response.data.items || []
+  } catch (error) {
+    revisionModal.show = false
+    throw error
+  } finally {
+    revisionModal.loading = false
+  }
+}
+
+const restoreRevision = async (revision) => {
+  await runBusy(async () => {
+    if (!revisionModal.file?.id || !revision?.id) throw new Error('版本信息不完整')
+    await callAction('set_current_revision', {
+      document_id: revisionModal.file.id,
+      revision_id: revision.id,
+    }, true)
+    pushToast('已切换到所选版本', 'success')
+    await openRevisionModal(revisionModal.file)
+    await refreshCurrentFolderAndQuota()
+  })
+}
+
 const loadShareLinks = async () => {
   shareModal.loading = true
   try {
@@ -955,6 +1032,10 @@ const handleFileAction = async (file, actionKey) => {
     pushToast('预览功能开发中', 'info')
   } else if (actionKey === 'share') {
     await runSafe(() => openShareModal(file))
+  } else if (actionKey === 'move') {
+    await runSafe(() => openMoveModal(file))
+  } else if (actionKey === 'history') {
+    await runSafe(() => openRevisionModal(file))
   }
 }
 
@@ -1049,6 +1130,12 @@ const handleLogin = async () => {
       diskUsed: session.diskUsed,
     }))
 
+    const nextPath = new URLSearchParams(window.location.search).get('next')
+    if (nextPath === '/security' || nextPath === '/admin/src') {
+      window.location.replace(nextPath)
+      return
+    }
+
     runSafe(loadDriveOverview)
     runSafe(async () => {
       const loadedFromCache = await loadAvatarFromCache()
@@ -1096,7 +1183,15 @@ const submitRegister = async () => {
   })
 }
 
-const logout = () => {
+const logout = async () => {
+  if (session.username && session.token) {
+    try {
+      await callAction('logout')
+    } catch {
+      // Clearing this tab's state still prevents local reuse when the server
+      // cannot be reached to revoke the credential.
+    }
+  }
   sessionStorage.removeItem(SESSION_STORAGE_KEY)
   session.username = ''
   session.token = ''
@@ -1762,6 +1857,8 @@ onBeforeUnmount(() => {
                       <div class="file-hover-actions" @click.stop>
                         <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleFileAction(file, 'download'))">⤓</button>
                         <button class="ghost icon-btn" title="分享" @click="runSafe(() => handleFileAction(file, 'share'))">⌁</button>
+                        <button class="ghost icon-btn" title="移动" @click="handleFileAction(file, 'move')">↱</button>
+                        <button class="ghost icon-btn" title="版本历史" @click="handleFileAction(file, 'history')">◷</button>
                         <button class="ghost icon-btn" title="重命名" @click="handleFileAction(file, 'rename')">✎</button>
                         <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleFileAction(file, 'recycle'))">⌫</button>
                       </div>
@@ -1823,6 +1920,8 @@ onBeforeUnmount(() => {
                       <div class="file-hover-actions" @click.stop>
                         <button class="ghost icon-btn" title="下载" @click="runSafe(() => handleFileAction(file, 'download'))">⤓</button>
                         <button class="ghost icon-btn" title="分享" @click="runSafe(() => handleFileAction(file, 'share'))">⌁</button>
+                        <button class="ghost icon-btn" title="移动" @click="handleFileAction(file, 'move')">↱</button>
+                        <button class="ghost icon-btn" title="版本历史" @click="handleFileAction(file, 'history')">◷</button>
                         <button class="ghost icon-btn" title="重命名" @click="handleFileAction(file, 'rename')">✎</button>
                         <button class="ghost icon-btn" title="回收站" @click="runSafe(() => handleFileAction(file, 'recycle'))">⌫</button>
                       </div>
@@ -1895,6 +1994,10 @@ onBeforeUnmount(() => {
           <!-- Vuln switches (admin/sysop only — runtime toggle for教学漏洞) -->
           <section v-else-if="activeTab === 'vuln'" key="vuln" class="defender-host">
             <VulnPanel />
+          </section>
+
+          <section v-else-if="activeTab === 'lab'" key="lab" class="defender-host">
+            <LabWorkflowPanel :client="client" :auth="authHeader()" />
           </section>
 
           <!-- Transfer -->
@@ -2137,6 +2240,56 @@ onBeforeUnmount(() => {
           <button class="ghost" @click="renameModal.show = false">取消</button>
           <button :disabled="busy" @click="runSafe(submitRename)">确认重命名</button>
         </div>
+      </div>
+    </div>
+
+    <!-- ── Move file modal ── -->
+    <div v-if="moveModal.show" class="overlay" @click.self="moveModal.show = false">
+      <div class="modal-card small">
+        <div class="modal-head">
+          <div>
+            <h3>移动文件</h3>
+            <p class="subtitle">{{ moveModal.file?.title }}</p>
+          </div>
+          <button class="ghost" @click="moveModal.show = false">关闭</button>
+        </div>
+        <p v-if="moveModal.loading" class="subtitle">正在读取可用文件夹…</p>
+        <label v-else>
+          目标文件夹
+          <select v-model="moveModal.targetFolderId">
+            <option v-for="folder in moveModal.destinations" :key="folder.id" :value="folder.id">
+              {{ '　'.repeat(folder.depth) }}{{ folder.name }}
+            </option>
+          </select>
+        </label>
+        <div class="actions">
+          <button class="ghost" @click="moveModal.show = false">取消</button>
+          <button :disabled="busy || moveModal.loading || !moveModal.targetFolderId" @click="runSafe(submitMoveFile)">确认移动</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Revision history modal ── -->
+    <div v-if="revisionModal.show" class="overlay" @click.self="revisionModal.show = false">
+      <div class="modal-card small">
+        <div class="modal-head">
+          <div>
+            <h3>版本历史</h3>
+            <p class="subtitle">{{ revisionModal.file?.title }}</p>
+          </div>
+          <button class="ghost" @click="revisionModal.show = false">关闭</button>
+        </div>
+        <p v-if="revisionModal.loading" class="subtitle">正在读取版本…</p>
+        <ul v-else class="revision-list">
+          <li v-for="revision in revisionModal.revisions" :key="revision.id" class="revision-item">
+            <div>
+              <strong>{{ revision.is_current ? '当前版本' : '历史版本' }}</strong>
+              <small>{{ formatDateTime(revision.created_time) }}</small>
+            </div>
+            <button v-if="!revision.is_current" class="ghost" :disabled="busy" @click="runSafe(() => restoreRevision(revision))">设为当前</button>
+          </li>
+          <li v-if="!revisionModal.revisions.length" class="revision-empty">暂无可用版本</li>
+        </ul>
       </div>
     </div>
 

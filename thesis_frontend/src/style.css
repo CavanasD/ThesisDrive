@@ -1544,6 +1544,42 @@ button:disabled {
   gap: 10px;
 }
 
+.revision-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.revision-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.revision-item strong,
+.revision-item small {
+  display: block;
+}
+
+.revision-item small,
+.revision-empty {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.revision-empty {
+  padding: 14px 0;
+  text-align: center;
+}
+
 .log-list {
   display: grid;
   gap: 9px;
