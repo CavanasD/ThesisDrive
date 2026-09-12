@@ -1,4 +1,4 @@
-FROM python:3.14.3-slim-bookworm
+FROM python:3.14.3-slim-bookworm@sha256:f21c0d5a44c56805654c15abccc1b2fd576c8d93aca0a3f74b4aba2dc92510e2
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -11,9 +11,11 @@ RUN apt-get update \
     && useradd --uid 10001 --gid cfms --create-home cfms
 
 WORKDIR /app
-COPY cfms_on_websocket-master/pyproject.toml cfms_on_websocket-master/README.md ./
+COPY cfms_on_websocket-master/pyproject.toml cfms_on_websocket-master/README.md cfms_on_websocket-master/uv.lock ./
 COPY cfms_on_websocket-master/src ./src
-RUN pip install ".[cluster,mysql,ext_oidc_sso]"
+RUN pip install "uv==0.12.5" \
+    && uv sync --locked --no-dev --extra cluster --extra mysql --extra ext_oidc_sso
+ENV PATH="/app/.venv/bin:$PATH"
 
 COPY infra/core/render_config.py /opt/thesis/render_config.py
 COPY infra/core/entrypoint.sh /usr/local/bin/thesis-core-entrypoint

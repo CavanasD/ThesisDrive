@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
 
 from tomlkit import dumps, parse
@@ -17,8 +18,20 @@ def env_bool(name: str, default: bool) -> bool:
     return env(name, str(default)).lower() in {"1", "true", "yes", "on"}
 
 
-source = TARGET if TARGET.exists() else SAMPLE
-config = parse(source.read_text(encoding="utf-8"))
+def overlay(target, current):
+    for key, value in current.items():
+        if isinstance(value, Mapping) and isinstance(target.get(key), Mapping):
+            overlay(target[key], value)
+        else:
+            target[key] = value
+
+
+config = parse(SAMPLE.read_text(encoding="utf-8"))
+if TARGET.exists():
+    overlay(config, parse(TARGET.read_text(encoding="utf-8")))
+for identifier in ("drive", "transfer_data_plane", "thesis_attack_lab", "src_portal"):
+    if identifier not in config["extensions"]["enabled"]:
+        config["extensions"]["enabled"].append(identifier)
 
 config["debug"] = env_bool("CFMS_DEBUG", False)
 config["server"]["host"] = "0.0.0.0"
@@ -43,6 +56,7 @@ config["s3"]["endpoint_url"] = env("MINIO_ENDPOINT", "http://minio:9000")
 config["s3"]["access_key_id"] = env("MINIO_ACCESS_KEY", "thesis-minio")
 config["s3"]["secret_access_key"] = env("MINIO_SECRET_KEY", "")
 config["s3"]["region_name"] = env("MINIO_REGION", "us-east-1")
+config["s3"]["addressing_style"] = "path"
 
 config["transfer"]["enabled"] = True
 config["transfer"]["legacy_websocket_enabled"] = env_bool(

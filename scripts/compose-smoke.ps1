@@ -1,11 +1,17 @@
 param(
-    [ValidateSet('hardened', 'baseline', 'unprotected')]
-    [string]$Profile = 'hardened'
+    [ValidateSet('hardened', 'baseline', 'course-unprotected', 'unprotected')]
+    [string]$Profile = 'hardened',
+
+    [switch]$AllowExtendedVulnerabilities
 )
 
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
+
+if ($Profile -eq 'unprotected' -and -not $AllowExtendedVulnerabilities) {
+    throw "Use 'course-unprotected' for the assigned tasks. The full 'unprotected' profile requires -AllowExtendedVulnerabilities."
+}
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw 'Docker CLI is required for the Compose smoke test.'
