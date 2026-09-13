@@ -14,6 +14,9 @@ CURSOR.md
 # ── 根目录噪音 ────────────────────────────────────────
 package.json
 package-lock.json
+.env
+.env.*
+!.env.example
 
 # ── Carapace（SpringBoot / Gradle）────────────────────
 carapace/.gradle/
@@ -40,3 +43,5 @@ scripts/seed_data.py
 
 Report/
 docs/
+AGENTS.md
+.gitignore

@@ -1,0 +1,11 @@
+{
+  "data-root": "/srv/netdisk-data/docker",
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io"
+  ],
+  "log-driver": "local",
+  "log-opts": {
+    "max-size": "20m",
+    "max-file": "3"
+  }
+}

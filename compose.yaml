@@ -12,15 +12,16 @@ services:
     restart: "no"
     network_mode: none
     entrypoint: ["/bin/sh", "-c"]
-    command: >-
-      umask 077;
-      if [ ! -s /private/private.pem ]; then
-        openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /private/private.pem;
-      fi &&
-      openssl pkey -in /private/private.pem -pubout -out /public/public.pem &&
-      chown 10001:10001 /private/private.pem &&
-      chmod 0400 /private/private.pem &&
-      chmod 0444 /public/public.pem
+    command:
+      - >-
+        umask 077;
+        if [ ! -s /private/private.pem ]; then
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /private/private.pem;
+        fi &&
+        openssl pkey -in /private/private.pem -pubout -out /public/public.pem &&
+        chown 10001:10001 /private/private.pem &&
+        chmod 0400 /private/private.pem &&
+        chmod 0444 /public/public.pem
     volumes:
       - transfer-private:/private
       - transfer-public:/public
@@ -31,24 +32,26 @@ services:
     restart: "no"
     network_mode: none
     entrypoint: ["/bin/sh", "-c"]
-    command: >-
-      set -eu;
-      umask 077;
-      if [ ! -s /tls/key.pem ] || [ ! -s /tls/cert.pem ]; then
-        rm -f /tls/key.pem /tls/cert.pem;
-        openssl req -x509 -nodes -newkey rsa:3072 -days 3650
-        -subj "/CN=drive-core"
-        -addext "subjectAltName=DNS:drive-core"
-        -addext "basicConstraints=critical,CA:FALSE"
-        -addext "keyUsage=critical,digitalSignature,keyEncipherment"
-        -addext "extendedKeyUsage=serverAuth"
-        -keyout /tls/key.pem -out /tls/cert.pem;
-      fi;
-      chown 10001:10001 /tls/key.pem;
-      chmod 0400 /tls/key.pem;
-      chmod 0444 /tls/cert.pem;
-      cp /tls/cert.pem /ca/cert.pem;
-      chmod 0444 /ca/cert.pem
+    command:
+      - >-
+        set -eu;
+        umask 077;
+        if [ ! -s /tls/key.pem ] || [ ! -s /tls/cert.pem ] ||
+          ! openssl x509 -in /tls/cert.pem -noout -checkhost drive-core >/dev/null 2>&1; then
+          rm -f /tls/key.pem /tls/cert.pem;
+          openssl req -x509 -nodes -newkey rsa:3072 -days 3650 \
+          -subj "/CN=drive-core" \
+          -addext "subjectAltName=DNS:drive-core" \
+          -addext "basicConstraints=critical,CA:FALSE" \
+          -addext "keyUsage=critical,digitalSignature,keyEncipherment" \
+          -addext "extendedKeyUsage=serverAuth" \
+          -keyout /tls/key.pem -out /tls/cert.pem;
+        fi;
+        chown 10001:10001 /tls/key.pem;
+        chmod 0400 /tls/key.pem;
+        chmod 0444 /tls/cert.pem;
+        cp /tls/cert.pem /ca/cert.pem;
+        chmod 0444 /ca/cert.pem
     volumes:
       - core-tls:/tls
       - core-ca:/ca
@@ -72,7 +75,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-      start_period: 20s
+      start_period: 10m
     security_opt:
       - no-new-privileges:true
 
@@ -94,7 +97,7 @@ services:
       - no-new-privileges:true
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-10-15T17-29-55Z
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
     restart: unless-stopped
     command: server /data --console-address :9001
     environment:
@@ -107,16 +110,17 @@ services:
       - no-new-privileges:true
 
   minio-init:
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
     restart: "no"
     depends_on:
       - minio
     entrypoint: ["/bin/sh", "-c"]
-    command: >-
-      until mc alias set local http://minio:9000
-      "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 2; done;
-      mc mb --ignore-existing local/thesis-drive;
-      mc anonymous set none local/thesis-drive
+    command:
+      - >-
+        until mc alias set local http://minio:9000
+        "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 2; done;
+        mc mb --ignore-existing local/thesis-drive;
+        mc anonymous set none local/thesis-drive
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-thesis-minio}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-this-minio-password}
@@ -176,7 +180,7 @@ services:
       interval: 10s
       timeout: 4s
       retries: 20
-      start_period: 20s
+      start_period: 15m
     deploy:
       resources:
         limits:
@@ -264,18 +268,19 @@ services:
           memory: 768M
 
   metrics-token-init:
-    image: alpine:3.23
+    image: alpine:3.23@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40
     restart: "no"
     network_mode: none
     environment:
       CARAPACE_ADMIN_TOKEN: ${CARAPACE_ADMIN_TOKEN:-change-this-admin-token}
     entrypoint: ["/bin/sh", "-c"]
-    command: >-
-      set -eu;
-      test -n "$$CARAPACE_ADMIN_TOKEN";
-      umask 077;
-      printf '%s' "$$CARAPACE_ADMIN_TOKEN" > /token/carapace-admin-token;
-      chmod 0444 /token/carapace-admin-token
+    command:
+      - >-
+        set -eu;
+        test -n "$$CARAPACE_ADMIN_TOKEN";
+        umask 077;
+        printf '%s' "$$CARAPACE_ADMIN_TOKEN" > /token/carapace-admin-token;
+        chmod 0444 /token/carapace-admin-token
     volumes:
       - metrics-token:/token
 
@@ -323,13 +328,22 @@ services:
     build:
       context: .
       dockerfile: infra/nginx/Dockerfile
+      args:
+        TLS_SAN: ${TLS_SAN:-DNS:localhost,IP:127.0.0.1}
     read_only: true
     tmpfs:
       - /tmp:size=128m,mode=1777
       - /var/cache/nginx:size=64m,mode=0755,uid=101,gid=101
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        mkdir -p /tmp/nginx/proxy_temp /tmp/nginx/client_temp
+        /tmp/nginx/fastcgi_temp /tmp/nginx/uwsgi_temp /tmp/nginx/scgi_temp &&
+        exec nginx -g 'daemon off;'
     ports:
-      - "80:8080"
-      - "443:8443"
+      - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-80}:8080"
+      - "${BIND_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-443}:8443"
     networks: [public, edge]
     depends_on:
       security-gateway:

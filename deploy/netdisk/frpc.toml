@@ -1,0 +1,24 @@
+serverAddr = "8.218.74.208"
+serverPort = 7000
+loginFailExit = false
+
+transport.protocol = "tcp"
+transport.tls.enable = true
+
+auth.method = "token"
+auth.tokenSource.type = "file"
+auth.tokenSource.file.path = "/etc/frp/aliserver_token"
+
+[[proxies]]
+name = "n1n3bird-netdisk-http"
+type = "http"
+localIP = "127.0.0.1"
+localPort = 80
+customDomains = ["thesis.n1n3bird.top"]
+
+[[proxies]]
+name = "n1n3bird-netdisk-https"
+type = "https"
+localIP = "127.0.0.1"
+localPort = 443
+customDomains = ["thesis.n1n3bird.top"]

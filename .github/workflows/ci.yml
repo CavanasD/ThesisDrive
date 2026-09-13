@@ -68,7 +68,7 @@ jobs:
       - run: cp .env.example .env
       - name: Validate every experiment profile
         run: |
-          for profile in hardened baseline unprotected; do
+          for profile in hardened baseline course-unprotected unprotected; do
             docker compose --env-file .env --env-file "profiles/${profile}.env" config --quiet
           done
       - name: Validate Prometheus scrape configuration
