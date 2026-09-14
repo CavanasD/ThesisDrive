@@ -1,0 +1,12 @@
+Profile: smoke
+Scenario: upload-unique
+Users: 1
+Requests: 54
+Success rate: 100.00%
+Valid outcome rate: 100.00%
+Throughput: 10.64 req/s
+Dropped iterations: 0
+Latency: {'avg': 46.397, 'p50': 44.463, 'p95': 56.31, 'p99': 58.994, 'max': 80.802}
+Errors: {}
+Expected rejections: {}
+Actions: {'cleanup_delete_document': {'requests': 54, 'successes': 54, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 10.64, 'latency_ms': {'avg': 23.42, 'p50': 22.678, 'p95': 28.044, 'p99': 31.053, 'max': 43.456}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'cleanup_purge_document': {'requests': 54, 'successes': 54, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 10.64, 'latency_ms': {'avg': 24.129, 'p50': 23.45, 'p95': 28.853, 'p99': 36.076, 'max': 38.652}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'create_document': {'requests': 54, 'successes': 54, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 10.64, 'latency_ms': {'avg': 23.833, 'p50': 22.239, 'p95': 31.274, 'p99': 33.823, 'max': 46.764}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'login': {'requests': 1, 'successes': 1, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 0.197, 'latency_ms': {'avg': 71.222, 'p50': 71.222, 'p95': 71.222, 'p99': 71.222, 'max': 71.222}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'upload_file': {'requests': 54, 'successes': 54, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 10.64, 'latency_ms': {'avg': 20.931, 'p50': 20.584, 'p95': 24.069, 'p99': 27.635, 'max': 31.803}, 'transferred_bytes': 56623104, 'bytes_per_second': 11156609.183}}

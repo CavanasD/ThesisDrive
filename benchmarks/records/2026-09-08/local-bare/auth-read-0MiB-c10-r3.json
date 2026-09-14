@@ -1,0 +1,299 @@
+{
+  "schema_version": 2,
+  "profile": "smoke",
+  "scenario": "auth-read",
+  "users": 10,
+  "elapsed_seconds": 5.089,
+  "requests": 335,
+  "successes": 334,
+  "expected_rejection_count": 0,
+  "expected_rejections": {},
+  "errors": {
+    "code_503": 1
+  },
+  "error_categories": {
+    "protocol": 1
+  },
+  "success_rate": 0.997,
+  "valid_outcome_rate": 0.997,
+  "throughput_rps": 65.822,
+  "latency_ms": {
+    "avg": 150.91,
+    "p50": 151.873,
+    "p95": 192.257,
+    "p99": 213.299,
+    "max": 239.105
+  },
+  "transferred_bytes": 0,
+  "bytes_per_second": 0.0,
+  "dropped_iterations": 0,
+  "actions": {
+    "list_directory": {
+      "requests": 108,
+      "successes": 108,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 21.22,
+      "latency_ms": {
+        "avg": 125.572,
+        "p50": 126.648,
+        "p95": 149.99,
+        "p99": 161.016,
+        "max": 176.628
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "list_groups": {
+      "requests": 119,
+      "successes": 119,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 23.382,
+      "latency_ms": {
+        "avg": 164.687,
+        "p50": 162.895,
+        "p95": 193.213,
+        "p99": 203.505,
+        "max": 226.527
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "list_users": {
+      "requests": 108,
+      "successes": 107,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {
+        "code_503": 1
+      },
+      "error_categories": {
+        "protocol": 1
+      },
+      "success_rate": 0.9907,
+      "valid_outcome_rate": 0.9907,
+      "throughput_rps": 21.22,
+      "latency_ms": {
+        "avg": 161.066,
+        "p50": 158.429,
+        "p95": 195.789,
+        "p99": 213.719,
+        "max": 239.105
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "login": {
+      "requests": 10,
+      "successes": 10,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 1.965,
+      "latency_ms": {
+        "avg": 294.117,
+        "p50": 294.446,
+        "p95": 300.358,
+        "p99": 300.358,
+        "max": 302.411
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    }
+  },
+  "started_at": "2026-09-08T13:37:35.786265+00:00",
+  "finished_at": "2026-09-08T13:37:40.877467+00:00",
+  "random_seed": 20260908,
+  "parameters": {
+    "scenario": "auth-read",
+    "users": 10,
+    "duration_seconds": 5.0,
+    "ramp_up_seconds": 0.0,
+    "arrival_pattern": "closed",
+    "rate": 0.0,
+    "stage_rates": [],
+    "spike_rate": null,
+    "spike_start_seconds": null,
+    "spike_duration_seconds": null,
+    "inflight_per_user": 1,
+    "payload_size_bytes": 1048576,
+    "file_size_group": "1MiB-to-16MiB",
+    "action_weights": {},
+    "random_seed": 20260908,
+    "account_pool_size": 1,
+    "cleanup": "per-iteration-best-effort",
+    "target_config_id": "managed-disposable",
+    "target_environment": "managed-disposable"
+  },
+  "phases": [
+    {
+      "scenario": "auth-read",
+      "users": 10,
+      "elapsed_seconds": 5.089,
+      "requests": 335,
+      "successes": 334,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {
+        "code_503": 1
+      },
+      "error_categories": {
+        "protocol": 1
+      },
+      "success_rate": 0.997,
+      "valid_outcome_rate": 0.997,
+      "throughput_rps": 65.828,
+      "latency_ms": {
+        "avg": 150.91,
+        "p50": 151.873,
+        "p95": 192.257,
+        "p99": 213.299,
+        "max": 239.105
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0,
+      "dropped_iterations": 0,
+      "actions": {
+        "list_directory": {
+          "requests": 108,
+          "successes": 108,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 21.222,
+          "latency_ms": {
+            "avg": 125.572,
+            "p50": 126.648,
+            "p95": 149.99,
+            "p99": 161.016,
+            "max": 176.628
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        },
+        "list_groups": {
+          "requests": 119,
+          "successes": 119,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 23.384,
+          "latency_ms": {
+            "avg": 164.687,
+            "p50": 162.895,
+            "p95": 193.213,
+            "p99": 203.505,
+            "max": 226.527
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        },
+        "list_users": {
+          "requests": 108,
+          "successes": 107,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {
+            "code_503": 1
+          },
+          "error_categories": {
+            "protocol": 1
+          },
+          "success_rate": 0.9907,
+          "valid_outcome_rate": 0.9907,
+          "throughput_rps": 21.222,
+          "latency_ms": {
+            "avg": 161.066,
+            "p50": 158.429,
+            "p95": 195.789,
+            "p99": 213.719,
+            "max": 239.105
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        }
+      },
+      "name": "closed",
+      "rate": 0.0
+    }
+  ],
+  "saturation_phase": null,
+  "connections": {
+    "attempts": 10,
+    "successes": 10,
+    "success_rate": 1.0,
+    "handshake_latency_ms": {
+      "avg": 29.273,
+      "p50": 28.665,
+      "p95": 31.211,
+      "p99": 31.211,
+      "max": 35.193
+    },
+    "current_connections": 10,
+    "peak_connections": 10,
+    "expected_rejections": {},
+    "errors": {}
+  },
+  "generator": {
+    "event_loop_lag_ms": {
+      "avg": 5.317,
+      "p50": 3.667,
+      "p95": 13.043,
+      "p99": 13.043,
+      "max": 14.937
+    },
+    "cpu_percent_one_core_avg": 5.0,
+    "cpu_percent_one_core_peak": 12.5,
+    "rss_current_bytes": 31449088,
+    "rss_peak_bytes": 31449088,
+    "sample_count": 20,
+    "generator_saturated": false
+  },
+  "harness": {
+    "commit": "a0041424e5b184f701fa7250c2f1535caa30afc7",
+    "python_version": "3.14.7",
+    "python_implementation": "CPython",
+    "component_versions": {
+      "orjson": "3.12.0",
+      "pycryptodome": "3.23.0",
+      "websockets": "17.1"
+    }
+  },
+  "server": {
+    "commit": "a0041424e5b184f701fa7250c2f1535caa30afc7",
+    "version": "0.8.0",
+    "protocol_version": 26,
+    "python_version": "3.14.7",
+    "component_versions": {
+      "apscheduler": "3.11.3",
+      "cryptography": "50.0.1",
+      "orjson": "3.12.0",
+      "pluggy": "1.6.0",
+      "pydantic": "2.13.5",
+      "sqlalchemy": "2.0.52",
+      "websockets": "17.1"
+    }
+  },
+  "target": {
+    "config_id": "managed-disposable",
+    "environment": "managed-disposable"
+  }
+}

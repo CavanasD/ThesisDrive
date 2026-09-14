@@ -1,0 +1,12 @@
+Profile: smoke
+Scenario: server-info
+Users: 10
+Requests: 1672
+Success rate: 62.74%
+Valid outcome rate: 62.74%
+Throughput: 333.795 req/s
+Dropped iterations: 0
+Latency: {'avg': 29.919, 'p50': 29.361, 'p95': 41.694, 'p99': 49.562, 'max': 145.62}
+Errors: {'code_503': 623}
+Expected rejections: {}
+Actions: {'server_info': {'requests': 1672, 'successes': 1049, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {'code_503': 623}, 'error_categories': {'protocol': 623}, 'success_rate': 0.6274, 'valid_outcome_rate': 0.6274, 'throughput_rps': 333.795, 'latency_ms': {'avg': 29.919, 'p50': 29.361, 'p95': 41.694, 'p99': 49.562, 'max': 145.62}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}}

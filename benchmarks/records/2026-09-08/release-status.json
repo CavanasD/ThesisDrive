@@ -1,0 +1,9 @@
+{
+  "finished_at": 1788877790.0505219,
+  "production_core_upgraded": false,
+  "production_gateway_fixed": true,
+  "production_gateway_rollback_image": "thesis-drive-security-gateway:rollback-20260908",
+  "old_gateway_image": "sha256:77ccac206c2b0e4e84a4bd340aa9b2f1c682a0dc4ecd634d9fa4545d6cae6425",
+  "eval_core_image": "thesis-eval-core:20260908-final",
+  "eval_gateway_image": "thesis-eval-gateway:20260908-final"
+}

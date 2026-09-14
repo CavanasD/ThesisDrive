@@ -1,0 +1,17 @@
+.git
+.github
+.kiro
+.venv
+.env
+.env.*
+!.env.example
+**/.gradle
+**/build
+**/dist
+**/node_modules
+**/__pycache__
+**/*.log
+Report
+docs
+transfer-data-plane/data
+carapace/waf-logs

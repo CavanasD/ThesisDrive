@@ -1,0 +1,12 @@
+Profile: smoke
+Scenario: auth-read
+Users: 10
+Requests: 310
+Success rate: 100.00%
+Valid outcome rate: 100.00%
+Throughput: 60.998 req/s
+Dropped iterations: 0
+Latency: {'avg': 163.314, 'p50': 165.531, 'p95': 212.011, 'p99': 228.05, 'max': 250.474}
+Errors: {}
+Expected rejections: {}
+Actions: {'list_directory': {'requests': 100, 'successes': 100, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 19.677, 'latency_ms': {'avg': 135.109, 'p50': 133.545, 'p95': 169.95, 'p99': 183.645, 'max': 187.601}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'list_groups': {'requests': 115, 'successes': 115, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 22.628, 'latency_ms': {'avg': 177.141, 'p50': 176.887, 'p95': 217.732, 'p99': 228.05, 'max': 233.524}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'list_users': {'requests': 95, 'successes': 95, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 18.693, 'latency_ms': {'avg': 176.267, 'p50': 175.678, 'p95': 212.727, 'p99': 248.149, 'max': 250.474}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'login': {'requests': 10, 'successes': 10, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 1.968, 'latency_ms': {'avg': 345.569, 'p50': 347.233, 'p95': 353.875, 'p99': 353.875, 'max': 354.555}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}}

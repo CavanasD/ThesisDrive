@@ -1,0 +1,14 @@
+{
+  "time": 1788877966.9773896,
+  "before": {
+    "start_time": "FLOAT",
+    "end_time": "FLOAT"
+  },
+  "after": {
+    "start_time": "DOUBLE",
+    "end_time": "DOUBLE"
+  },
+  "rows_preserved": 30,
+  "backup": "/app/state/file-tasks-before-double-20260908.json",
+  "scope": "file_tasks start_time and end_time only; no version migration"
+}

@@ -1,0 +1,170 @@
+{
+  "schema": "thesis-drive.cfms-control-plane-benchmark/v1",
+  "captured_at": "2026-08-29T00:23:12.7860895+08:00",
+  "source": {
+    "repository": "cfms_on_websocket",
+    "branch": "thesis",
+    "revision": "b332930e06ab223e676cece7ff969103f62847f8",
+    "worktree": "isolated temporary worktree",
+    "runtime": "Python 3.13.15"
+  },
+  "environment": {
+    "os": "Windows 11 Pro 10.0.26200",
+    "cpu": "Intel Core Ultra 9 275HX",
+    "logical_processors": 24,
+    "memory_bytes": 33752997888,
+    "docker_available": false,
+    "database": "fresh isolated SQLite",
+    "providers": ["local storage", "memory cache", "local event bus"]
+  },
+  "method": {
+    "runner": "uv run python -m tests.stress.ws_load",
+    "duration_seconds_per_case": 10,
+    "ramp_up_seconds": 0,
+    "rate_cap_rps": 0,
+    "fresh_server_per_case": true,
+    "search": "250 isolated directory fixtures; query BenchmarkSearch; first result page is capped at 128"
+  },
+  "results": [
+    {
+      "scenario": "server-info",
+      "users": 1,
+      "elapsed_seconds": 10.002,
+      "requests": 2712,
+      "successes": 2712,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 271.143,
+      "latency_ms": {"avg": 3.668, "p50": 3.569, "p95": 4.479, "p99": 5.302, "max": 31.473}
+    },
+    {
+      "scenario": "server-info",
+      "users": 10,
+      "elapsed_seconds": 10.019,
+      "requests": 2688,
+      "successes": 2688,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 268.301,
+      "latency_ms": {"avg": 36.625, "p50": 36.46, "p95": 43.064, "p99": 48.574, "max": 68.979}
+    },
+    {
+      "scenario": "server-info",
+      "users": 20,
+      "elapsed_seconds": 10.024,
+      "requests": 2630,
+      "successes": 2630,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 262.365,
+      "latency_ms": {"avg": 73.734, "p50": 73.584, "p95": 80.755, "p99": 98.07, "max": 152.88}
+    },
+    {
+      "scenario": "auth-read",
+      "users": 1,
+      "elapsed_seconds": 10.002,
+      "requests": 844,
+      "successes": 844,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 84.385,
+      "latency_ms": {"avg": 11.794, "p50": 11.483, "p95": 14.804, "p99": 16.241, "max": 55.167}
+    },
+    {
+      "scenario": "auth-read",
+      "users": 10,
+      "elapsed_seconds": 10.089,
+      "requests": 661,
+      "successes": 661,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 65.518,
+      "latency_ms": {"avg": 149.446, "p50": 144.267, "p95": 205.13, "p99": 238.802, "max": 329.474}
+    },
+    {
+      "scenario": "auth-read",
+      "users": 20,
+      "elapsed_seconds": 10.175,
+      "requests": 611,
+      "successes": 611,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 60.052,
+      "latency_ms": {"avg": 320.096, "p50": 301.933, "p95": 491.144, "p99": 604.837, "max": 938.692}
+    },
+    {
+      "scenario": "mixed",
+      "users": 1,
+      "elapsed_seconds": 10.017,
+      "requests": 964,
+      "successes": 964,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 96.237,
+      "latency_ms": {"avg": 10.338, "p50": 9.905, "p95": 19.944, "p99": 21.895, "max": 87.059}
+    },
+    {
+      "scenario": "mixed",
+      "users": 10,
+      "elapsed_seconds": 10.09,
+      "requests": 761,
+      "successes": 761,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 75.424,
+      "latency_ms": {"avg": 129.463, "p50": 149.697, "p95": 299.016, "p99": 348.729, "max": 463.381}
+    },
+    {
+      "scenario": "mixed",
+      "users": 20,
+      "elapsed_seconds": 10.277,
+      "requests": 750,
+      "successes": 750,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 72.976,
+      "latency_ms": {"avg": 261.56, "p50": 259.369, "p95": 575.082, "p99": 703.669, "max": 1010.694}
+    },
+    {
+      "scenario": "search",
+      "users": 1,
+      "search_fixture_count": 250,
+      "elapsed_seconds": 10.016,
+      "requests": 347,
+      "successes": 347,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 34.643,
+      "latency_ms": {"avg": 28.805, "p50": 26.896, "p95": 35.476, "p99": 76.727, "max": 111.594}
+    },
+    {
+      "scenario": "search",
+      "users": 10,
+      "search_fixture_count": 250,
+      "elapsed_seconds": 10.109,
+      "requests": 281,
+      "successes": 281,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 27.797,
+      "latency_ms": {"avg": 351.947, "p50": 315.443, "p95": 667.558, "p99": 741.998, "max": 784.348}
+    },
+    {
+      "scenario": "search",
+      "users": 20,
+      "search_fixture_count": 250,
+      "elapsed_seconds": 10.415,
+      "requests": 287,
+      "successes": 287,
+      "errors": {},
+      "success_rate": 1.0,
+      "throughput_rps": 27.556,
+      "latency_ms": {"avg": 695.864, "p50": 626.863, "p95": 1168.377, "p99": 1418.623, "max": 1547.355}
+    }
+  ],
+  "limitations": [
+    "This record measures only the CFMS WebSocket control plane; it is not an HTTP upload/download result.",
+    "The fresh SQLite and local-provider setup is suitable for repeatable baseline comparison, not a production-capacity claim.",
+    "Docker was unavailable, so the Redis, MinIO, MySQL and transfer-data-plane matrix remains explicitly unmeasured."
+  ]
+}

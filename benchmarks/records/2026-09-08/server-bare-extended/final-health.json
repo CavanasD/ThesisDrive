@@ -1,0 +1,145 @@
+{
+  "checked_at": "2026-09-08T15:38:21.900880+00:00",
+  "containers": [
+    {
+      "name": "thesis-drive-security-gateway-1",
+      "state": "running",
+      "status": "Up About an hour (healthy)"
+    },
+    {
+      "name": "thesis-eval-drive-core-1",
+      "state": "running",
+      "status": "Up About an hour (healthy)"
+    },
+    {
+      "name": "thesis-eval-security-gateway-1",
+      "state": "running",
+      "status": "Up About an hour (healthy)"
+    },
+    {
+      "name": "thesis-bare-bench",
+      "state": "exited",
+      "status": "Exited (137) 5 minutes ago"
+    },
+    {
+      "name": "thesis-eval-nginx-1",
+      "state": "running",
+      "status": "Up 2 hours (healthy)"
+    },
+    {
+      "name": "thesis-eval-grafana-1",
+      "state": "running",
+      "status": "Up 2 hours"
+    },
+    {
+      "name": "thesis-eval-prometheus-1",
+      "state": "running",
+      "status": "Up 2 hours"
+    },
+    {
+      "name": "thesis-eval-transfer-data-plane-1",
+      "state": "running",
+      "status": "Up 2 hours (healthy)"
+    },
+    {
+      "name": "thesis-eval-minio-init-1",
+      "state": "exited",
+      "status": "Exited (0) 2 hours ago"
+    },
+    {
+      "name": "thesis-eval-redis-1",
+      "state": "running",
+      "status": "Up 2 hours (healthy)"
+    },
+    {
+      "name": "thesis-eval-mysql-1",
+      "state": "running",
+      "status": "Up 2 hours (healthy)"
+    },
+    {
+      "name": "thesis-eval-minio-1",
+      "state": "running",
+      "status": "Up 2 hours"
+    },
+    {
+      "name": "thesis-eval-metrics-token-init-1",
+      "state": "exited",
+      "status": "Exited (0) 2 hours ago"
+    },
+    {
+      "name": "thesis-eval-core-keygen-1",
+      "state": "exited",
+      "status": "Exited (0) 2 hours ago"
+    },
+    {
+      "name": "thesis-eval-transfer-keygen-1",
+      "state": "exited",
+      "status": "Exited (0) 2 hours ago"
+    },
+    {
+      "name": "thesis-drive-drive-core-1",
+      "state": "running",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "thesis-drive-nginx-1",
+      "state": "running",
+      "status": "Up 9 days (healthy)"
+    },
+    {
+      "name": "thesis-drive-core-keygen-1",
+      "state": "exited",
+      "status": "Exited (0) 9 days ago"
+    },
+    {
+      "name": "thesis-drive-mysql-1",
+      "state": "running",
+      "status": "Up 9 days (healthy)"
+    },
+    {
+      "name": "thesis-drive-metrics-token-init-1",
+      "state": "exited",
+      "status": "Exited (0) 9 days ago"
+    },
+    {
+      "name": "thesis-drive-transfer-keygen-1",
+      "state": "exited",
+      "status": "Exited (0) 9 days ago"
+    },
+    {
+      "name": "thesis-drive-minio-init-1",
+      "state": "exited",
+      "status": "Exited (0) 9 days ago"
+    },
+    {
+      "name": "thesis-drive-grafana-1",
+      "state": "running",
+      "status": "Up 9 days"
+    },
+    {
+      "name": "thesis-drive-prometheus-1",
+      "state": "running",
+      "status": "Up 9 days"
+    },
+    {
+      "name": "thesis-drive-transfer-data-plane-1",
+      "state": "running",
+      "status": "Up 9 days (healthy)"
+    },
+    {
+      "name": "thesis-drive-redis-1",
+      "state": "running",
+      "status": "Up 9 days (healthy)"
+    },
+    {
+      "name": "thesis-drive-minio-1",
+      "state": "running",
+      "status": "Up 9 days"
+    }
+  ],
+  "bare_worktree_tracked_diff_empty": true,
+  "bare_oom_killed_before_stop": false,
+  "bare_restart_count_before_stop": 0,
+  "benchmark_stopped_by_cleanup": true,
+  "note": "Exit 137 belongs to the explicit docker stop cleanup of the sleep-infinity container, not a measured workload failure. One-shot init containers exited successfully and are not long-running services."
+}

@@ -1,0 +1,1029 @@
+{
+  "mode": "transfers",
+  "started_at": 1788877402.090715,
+  "repeats": 3,
+  "requests_per_worker": 40,
+  "source_commit": "ddcfd50 plus thesis integration working tree",
+  "results": [
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.05118076875805855,
+      "throughput_mib_s": 19.53858889316795,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 50.58622360229492,
+          "first_response_ms": 50.42714625597,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 85.94096079468727
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.02266378328204155,
+      "throughput_mib_s": 44.12325989687633,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 21.89658209681511,
+          "first_response_ms": 12.726258486509323,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_seconds": 0.048855576664209366,
+      "throughput_mib_s": 20.468492407184712,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 48.283953219652176,
+          "first_response_ms": 48.077162355184555,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 84.34007316827774
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_seconds": 0.025257118046283722,
+      "throughput_mib_s": 39.59279907420545,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 24.584893137216568,
+          "first_response_ms": 14.199886471033096,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 3,
+      "elapsed_seconds": 0.05089176446199417,
+      "throughput_mib_s": 19.64954468707402,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 50.42298883199692,
+          "first_response_ms": 50.283558666706085,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 86.53384447097778
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 3,
+      "elapsed_seconds": 0.025732196867465973,
+      "throughput_mib_s": 38.86181988854327,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 25.24755150079727,
+          "first_response_ms": 13.05314525961876,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 1,
+      "elapsed_seconds": 0.08356230705976486,
+      "throughput_mib_s": 47.868472529595756,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 56.185174733400345,
+          "first_response_ms": 55.91227486729622,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 82.14670419692993,
+          "first_response_ms": 81.7132256925106,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 81.98854327201843,
+          "first_response_ms": 81.74104243516922,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 77.81103998422623,
+          "first_response_ms": 77.6122659444809,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 213.40444311499596
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 1,
+      "elapsed_seconds": 0.05163847282528877,
+      "throughput_mib_s": 77.46162465984258,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 45.02115026116371,
+          "first_response_ms": 20.974066108465195,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 50.70372670888901,
+          "first_response_ms": 17.23283901810646,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 47.89320379495621,
+          "first_response_ms": 17.872270196676254,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 45.97147926688194,
+          "first_response_ms": 16.8505497276783,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 2,
+      "elapsed_seconds": 0.08807117864489555,
+      "throughput_mib_s": 45.417809339512374,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 85.91483533382416,
+          "first_response_ms": 85.52771434187889,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 85.9421119093895,
+          "first_response_ms": 85.19360050559044,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 84.19208601117134,
+          "first_response_ms": 83.94213020801544,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 82.78076723217964,
+          "first_response_ms": 82.58748427033424,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 287.43331134319305
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 2,
+      "elapsed_seconds": 0.04836710914969444,
+      "throughput_mib_s": 82.70082852419701,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 47.5841760635376,
+          "first_response_ms": 28.488844633102417,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 40.82401096820831,
+          "first_response_ms": 19.46328580379486,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 40.06348177790642,
+          "first_response_ms": 19.69844102859497,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 34.1104194521904,
+          "first_response_ms": 15.277072787284851,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 3,
+      "elapsed_seconds": 0.08193988353013992,
+      "throughput_mib_s": 48.816276368377814,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 80.89927583932877,
+          "first_response_ms": 80.145213752985,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 78.59405130147934,
+          "first_response_ms": 78.43700423836708,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 80.14178276062012,
+          "first_response_ms": 80.01621067523956,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 65.23869559168816,
+          "first_response_ms": 65.05528837442398,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 279.48666736483574
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 3,
+      "elapsed_seconds": 0.05158993601799011,
+      "throughput_mib_s": 77.5345020510424,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 43.11171546578407,
+          "first_response_ms": 16.772672533988953,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 47.8595495223999,
+          "first_response_ms": 20.42355388402939,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 49.05284196138382,
+          "first_response_ms": 27.2093266248703,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 49.86696317791939,
+          "first_response_ms": 18.36811751127243,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 8,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.2530493885278702,
+      "throughput_mib_s": 31.614381866482564,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 251.59606337547302,
+          "first_response_ms": 251.41876563429832,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 283.525463193655
+    },
+    {
+      "operation": "download",
+      "size_mib": 8,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.09048431366682053,
+      "throughput_mib_s": 88.4131146693275,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 89.94419872760773,
+          "first_response_ms": 13.451546430587769,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 8,
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_seconds": 0.2544569559395313,
+      "throughput_mib_s": 31.439502097561462,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 253.89139726758003,
+          "first_response_ms": 253.70609760284424,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 289.5812876522541
+    },
+    {
+      "operation": "download",
+      "size_mib": 8,
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_seconds": 0.06900353729724884,
+      "throughput_mib_s": 115.9360855015031,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 68.55019181966782,
+          "first_response_ms": 13.021644204854965,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 8,
+      "concurrency": 1,
+      "repeat": 3,
+      "elapsed_seconds": 0.24600150808691978,
+      "throughput_mib_s": 32.5201258407463,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 245.48685923218727,
+          "first_response_ms": 245.29970437288284,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 279.8057198524475
+    },
+    {
+      "operation": "download",
+      "size_mib": 8,
+      "concurrency": 1,
+      "repeat": 3,
+      "elapsed_seconds": 0.08608824014663696,
+      "throughput_mib_s": 92.92790730038544,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 85.54786443710327,
+          "first_response_ms": 13.072825968265533,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 8,
+      "concurrency": 4,
+      "repeat": 1,
+      "elapsed_seconds": 0.56628393009305,
+      "throughput_mib_s": 56.508755236515114,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 564.821720123291,
+          "first_response_ms": 563.7981668114662,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 565.231841057539,
+          "first_response_ms": 565.1035085320473,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 559.8006211221218,
+          "first_response_ms": 559.6077665686607,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 561.091024428606,
+          "first_response_ms": 560.9317421913147,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 789.8939996957779
+    },
+    {
+      "operation": "download",
+      "size_mib": 8,
+      "concurrency": 4,
+      "repeat": 1,
+      "elapsed_seconds": 0.23238452896475792,
+      "throughput_mib_s": 137.70279864393612,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 215.34187719225883,
+          "first_response_ms": 23.44118431210518,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 223.55911508202553,
+          "first_response_ms": 27.037326246500015,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 219.09335628151894,
+          "first_response_ms": 22.71747589111328,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 230.29688745737076,
+          "first_response_ms": 43.89716684818268,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 8,
+      "concurrency": 4,
+      "repeat": 2,
+      "elapsed_seconds": 0.41304735094308853,
+      "throughput_mib_s": 77.47295782659334,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 362.1329478919506,
+          "first_response_ms": 360.3181391954422,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 411.8654392659664,
+          "first_response_ms": 411.75078973174095,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 411.19779646396637,
+          "first_response_ms": 411.01717203855515,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 409.75259989500046,
+          "first_response_ms": 409.5631241798401,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 544.6688681840897
+    },
+    {
+      "operation": "download",
+      "size_mib": 8,
+      "concurrency": 4,
+      "repeat": 2,
+      "elapsed_seconds": 0.2208426631987095,
+      "throughput_mib_s": 144.89953859688373,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 212.20417320728302,
+          "first_response_ms": 24.583734571933746,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 208.29713717103004,
+          "first_response_ms": 29.24315258860588,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 219.70976144075394,
+          "first_response_ms": 25.177013128995895,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 196.68756797909737,
+          "first_response_ms": 15.266455709934235,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 8,
+      "concurrency": 4,
+      "repeat": 3,
+      "elapsed_seconds": 0.5248976610600948,
+      "throughput_mib_s": 60.96426479663121,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 523.9134728908539,
+          "first_response_ms": 523.7482227385044,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 523.4387591481209,
+          "first_response_ms": 523.1307223439217,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 486.9004189968109,
+          "first_response_ms": 486.7662265896797,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 482.5412929058075,
+          "first_response_ms": 481.18600994348526,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 718.167170882225
+    },
+    {
+      "operation": "download",
+      "size_mib": 8,
+      "concurrency": 4,
+      "repeat": 3,
+      "elapsed_seconds": 0.22312556579709053,
+      "throughput_mib_s": 143.41700327205297,
+      "files": [
+        {
+          "size": 8388608,
+          "completion_ms": 221.84108197689056,
+          "first_response_ms": 19.098784774541855,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 188.06343153119087,
+          "first_response_ms": 22.27906510233879,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 198.98223504424095,
+          "first_response_ms": 36.982763558626175,
+          "sha256_ok": true
+        },
+        {
+          "size": 8388608,
+          "completion_ms": 191.1962516605854,
+          "first_response_ms": 29.154885560274124,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 32,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.9473711475729942,
+      "throughput_mib_s": 33.777680565825364,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 946.3847987353802,
+          "first_response_ms": 78.48416268825531,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 977.5771498680115
+    },
+    {
+      "operation": "download",
+      "size_mib": 32,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.31247004121541977,
+      "throughput_mib_s": 102.40981783574861,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 311.9433708488941,
+          "first_response_ms": 13.840287923812866,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 32,
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_seconds": 0.9382718838751316,
+      "throughput_mib_s": 34.10525301881333,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 937.6258440315723,
+          "first_response_ms": 85.9321765601635,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 968.6514399945736
+    },
+    {
+      "operation": "download",
+      "size_mib": 32,
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_seconds": 0.27552326023578644,
+      "throughput_mib_s": 116.14264426391856,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 274.99452233314514,
+          "first_response_ms": 13.040326535701752,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 32,
+      "concurrency": 1,
+      "repeat": 3,
+      "elapsed_seconds": 0.9471511989831924,
+      "throughput_mib_s": 33.7855244594035,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 946.5740025043488,
+          "first_response_ms": 84.95161309838295,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 978.245921432972
+    },
+    {
+      "operation": "download",
+      "size_mib": 32,
+      "concurrency": 1,
+      "repeat": 3,
+      "elapsed_seconds": 0.2804715931415558,
+      "throughput_mib_s": 114.09355094242788,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 280.00469505786896,
+          "first_response_ms": 13.080734759569168,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 32,
+      "concurrency": 4,
+      "repeat": 1,
+      "elapsed_seconds": 1.6700324974954128,
+      "throughput_mib_s": 76.6452151032777,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 1609.5571592450142,
+          "first_response_ms": 221.0294008255005,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1669.0674796700478,
+          "first_response_ms": 220.1329842209816,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1430.2660562098026,
+          "first_response_ms": 160.91499477624893,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1607.5882986187935,
+          "first_response_ms": 219.61799263954163,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 1774.363111704588
+    },
+    {
+      "operation": "download",
+      "size_mib": 32,
+      "concurrency": 4,
+      "repeat": 1,
+      "elapsed_seconds": 0.9394043982028961,
+      "throughput_mib_s": 136.25654749420715,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 880.5086798965931,
+          "first_response_ms": 18.873747438192368,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 896.8002460896969,
+          "first_response_ms": 18.164314329624176,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 929.7652430832386,
+          "first_response_ms": 23.97080510854721,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 935.5638846755028,
+          "first_response_ms": 24.205338209867477,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 32,
+      "concurrency": 4,
+      "repeat": 2,
+      "elapsed_seconds": 1.770973488688469,
+      "throughput_mib_s": 72.27663249481677,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 1388.2108740508556,
+          "first_response_ms": 140.18001034855843,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1767.238974571228,
+          "first_response_ms": 194.52198967337608,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1768.703743815422,
+          "first_response_ms": 194.4112405180931,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1764.117918908596,
+          "first_response_ms": 192.91702285408974,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 1897.1361704170704
+    },
+    {
+      "operation": "download",
+      "size_mib": 32,
+      "concurrency": 4,
+      "repeat": 2,
+      "elapsed_seconds": 0.8881881795823574,
+      "throughput_mib_s": 144.11360446182474,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 832.7120915055275,
+          "first_response_ms": 20.542141050100327,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 877.2088252007961,
+          "first_response_ms": 25.64217522740364,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 856.8134494125843,
+          "first_response_ms": 18.112406134605408,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 885.9724290668964,
+          "first_response_ms": 21.616127341985703,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 32,
+      "concurrency": 4,
+      "repeat": 3,
+      "elapsed_seconds": 1.7569595165550709,
+      "throughput_mib_s": 72.85312996338918,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 1505.3047873079777,
+          "first_response_ms": 216.40371531248093,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1755.153100937605,
+          "first_response_ms": 218.13013404607773,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1755.1563903689384,
+          "first_response_ms": 216.73166006803513,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 1592.256162315607,
+          "first_response_ms": 217.10935235023499,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 1887.1197290718555
+    },
+    {
+      "operation": "download",
+      "size_mib": 32,
+      "concurrency": 4,
+      "repeat": 3,
+      "elapsed_seconds": 0.9183179251849651,
+      "throughput_mib_s": 139.3852787684816,
+      "files": [
+        {
+          "size": 33554432,
+          "completion_ms": 909.5456898212433,
+          "first_response_ms": 22.762447595596313,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 917.4234606325626,
+          "first_response_ms": 28.17094326019287,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 847.747627645731,
+          "first_response_ms": 19.6811743080616,
+          "sha256_ok": true
+        },
+        {
+          "size": 33554432,
+          "completion_ms": 882.1047060191631,
+          "first_response_ms": 18.309980630874634,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    }
+  ],
+  "server": {
+    "server_name": "CFMS WebSocket Server",
+    "protocol_version": 26,
+    "lockdown": false,
+    "lockdown_reason": null,
+    "extension_flags": [
+      "http_transfer",
+      "resume_upload",
+      "src_portal",
+      "thesis_attack_lab"
+    ],
+    "capabilities": {
+      "http_transfer": true,
+      "resume_upload": true,
+      "src_portal": true,
+      "thesis_attack_lab": true,
+      "legacy_websocket_transfer": false
+    }
+  },
+  "fixture_directory_id": "2ed9331908af312a60eff1ab687ecd640bc05723a299f51db161d0e17ef0b66c",
+  "completed_at": 1788877452.2488449
+}

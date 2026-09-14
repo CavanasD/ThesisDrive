@@ -1,0 +1,66 @@
+{
+  "mode": "transfers",
+  "started_at": 1788874919.856283,
+  "repeats": 1,
+  "requests_per_worker": 40,
+  "source_commit": "ddcfd50 plus thesis integration working tree",
+  "results": [
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.07194654271006584,
+      "throughput_mib_s": 13.899208528057496,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 67.33165308833122,
+          "first_response_ms": 66.79359823465347,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 107.59392753243446
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.030280079692602158,
+      "throughput_mib_s": 33.025012158218125,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 29.686279594898224,
+          "first_response_ms": 18.82398873567581,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "completed"
+      ]
+    }
+  ],
+  "server": {
+    "server_name": "CFMS WebSocket Server",
+    "protocol_version": 26,
+    "lockdown": false,
+    "lockdown_reason": null,
+    "extension_flags": [
+      "http_transfer",
+      "resume_upload",
+      "src_portal",
+      "thesis_attack_lab"
+    ],
+    "capabilities": {
+      "http_transfer": true,
+      "resume_upload": true,
+      "src_portal": true,
+      "thesis_attack_lab": true,
+      "legacy_websocket_transfer": false
+    }
+  },
+  "fixture_directory_id": "765766748dcb07b10c637a2f385b217484f8b7b814da5cfaab23865d65208ddf",
+  "completed_at": 1788874920.9078496
+}

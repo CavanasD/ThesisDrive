@@ -1,0 +1,1 @@
+{"users": 10, "scenario": "auth-read", "policy": "default", "responses": {"200": 509, "503:server_concurrency": 5}, "generator_health": null}

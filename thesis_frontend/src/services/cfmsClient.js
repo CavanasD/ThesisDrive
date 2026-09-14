@@ -1,6 +1,8 @@
 const FRAME_TYPE_PROCESS = 0
 const FRAME_TYPE_CONCLUSION = 1
 
+export const CFMS_PROTOCOL_VERSION = 26
+
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 
@@ -48,6 +50,9 @@ export class CfmsClient {
     this.streams = new Map()
     this.pendingServerEvents = []
     this.onWafBlock = options.onWafBlock || null
+    this.serverCapabilities = Object.freeze({})
+    this.protocolVersion = null
+    this.incomingFrameChain = Promise.resolve()
   }
 
   setUrl(url) {
@@ -83,16 +88,20 @@ export class CfmsClient {
         )
       }
 
-      ws.onmessage = async (event) => {
-        try {
-          const arrayBuffer =
-            event.data instanceof ArrayBuffer
-              ? event.data
-              : await event.data.arrayBuffer()
-          this.handleIncomingFrame(arrayBuffer)
-        } catch {
-          // Ignore malformed frames.
-        }
+      ws.onmessage = (event) => {
+        // Blob.arrayBuffer() is asynchronous and may complete out of order.
+        // Chain every conversion so protocol-26 frames stay FIFO per socket.
+        this.incomingFrameChain = this.incomingFrameChain
+          .then(async () => {
+            const arrayBuffer =
+              event.data instanceof ArrayBuffer
+                ? event.data
+                : await event.data.arrayBuffer()
+            this.handleIncomingFrame(arrayBuffer)
+          })
+          .catch(() => {
+            // Ignore malformed frames without breaking the FIFO chain.
+          })
       }
     })
   }
@@ -107,9 +116,37 @@ export class CfmsClient {
   }
 
   getNextFrameId() {
-    const id = this.nextFrameId
-    this.nextFrameId += 2
-    return id
+    // Protocol 26 reserves odd stream IDs for the client and even IDs for the
+    // server. Wrap safely before uint32 overflow and never reuse a live stream.
+    for (let attempts = 0; attempts < 0x80000000; attempts += 1) {
+      const id = this.nextFrameId
+      this.nextFrameId = id >= 0xfffffffd ? 1 : id + 2
+      if (!this.streams.has(id)) return id
+    }
+    throw new Error('没有可用的客户端流 ID')
+  }
+
+  applyServerInfo(response) {
+    const data = response?.data || response || {}
+    this.protocolVersion = Number(data.protocol_version || 0) || null
+
+    const raw = data.capabilities
+    const capabilities = Array.isArray(raw)
+      ? Object.fromEntries(raw.map((name) => [name, true]))
+      : raw && typeof raw === 'object'
+        ? { ...raw }
+        : {}
+
+    this.serverCapabilities = Object.freeze(capabilities)
+    return {
+      protocolVersion: this.protocolVersion,
+      capabilities: this.serverCapabilities,
+      compatible: this.protocolVersion === CFMS_PROTOCOL_VERSION,
+    }
+  }
+
+  hasCapability(name) {
+    return this.serverCapabilities[name] === true
   }
 
   ensureStream(frameId) {
@@ -303,8 +340,9 @@ export class CfmsClient {
   }
 
   async downloadFileByTask(taskId, options = {}, auth = null) {
-    // End-to-end AES-256-GCM: CFMS streams ciphertext file_chunks then sends
-    // a single aes_key envelope with key/nonce/tag. We buffer ciphertext,
+    // Legacy WebSocket transport encryption: CFMS streams ciphertext chunks
+    // and later sends the key/nonce/tag on the same WSS channel. This protects
+    // the payload in transit but is not end-to-end encryption. We buffer ciphertext,
     // decrypt in one shot via SubtleCrypto (GCM auth requires the full blob),
     // and verify SHA-256 of the plaintext against transfer_file metadata.
     const strictIntegrity = options.strictIntegrity !== false

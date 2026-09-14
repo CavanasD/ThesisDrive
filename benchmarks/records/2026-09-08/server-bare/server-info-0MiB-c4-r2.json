@@ -1,0 +1,173 @@
+{
+  "schema_version": 2,
+  "profile": "smoke",
+  "scenario": "server-info",
+  "users": 4,
+  "elapsed_seconds": 5.017,
+  "requests": 527,
+  "successes": 527,
+  "expected_rejection_count": 0,
+  "expected_rejections": {},
+  "errors": {},
+  "error_categories": {},
+  "success_rate": 1.0,
+  "valid_outcome_rate": 1.0,
+  "throughput_rps": 105.042,
+  "latency_ms": {
+    "avg": 38.026,
+    "p50": 36.704,
+    "p95": 57.365,
+    "p99": 67.912,
+    "max": 78.807
+  },
+  "transferred_bytes": 0,
+  "bytes_per_second": 0.0,
+  "dropped_iterations": 0,
+  "actions": {
+    "server_info": {
+      "requests": 527,
+      "successes": 527,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 105.042,
+      "latency_ms": {
+        "avg": 38.026,
+        "p50": 36.704,
+        "p95": 57.365,
+        "p99": 67.912,
+        "max": 78.807
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    }
+  },
+  "started_at": "2026-09-08T13:39:42.070389+00:00",
+  "finished_at": "2026-09-08T13:39:47.088245+00:00",
+  "random_seed": 20260908,
+  "parameters": {
+    "scenario": "server-info",
+    "users": 4,
+    "duration_seconds": 5.0,
+    "ramp_up_seconds": 0.0,
+    "arrival_pattern": "closed",
+    "rate": 0.0,
+    "stage_rates": [],
+    "spike_rate": null,
+    "spike_start_seconds": null,
+    "spike_duration_seconds": null,
+    "inflight_per_user": 1,
+    "payload_size_bytes": 1048576,
+    "file_size_group": "1MiB-to-16MiB",
+    "action_weights": {},
+    "random_seed": 20260908,
+    "account_pool_size": 1,
+    "cleanup": "per-iteration-best-effort",
+    "target_config_id": "managed-disposable",
+    "target_environment": "managed-disposable"
+  },
+  "phases": [
+    {
+      "scenario": "server-info",
+      "users": 4,
+      "elapsed_seconds": 5.016,
+      "requests": 527,
+      "successes": 527,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 105.054,
+      "latency_ms": {
+        "avg": 38.026,
+        "p50": 36.704,
+        "p95": 57.365,
+        "p99": 67.912,
+        "max": 78.807
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0,
+      "dropped_iterations": 0,
+      "actions": {
+        "server_info": {
+          "requests": 527,
+          "successes": 527,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 105.054,
+          "latency_ms": {
+            "avg": 38.026,
+            "p50": 36.704,
+            "p95": 57.365,
+            "p99": 67.912,
+            "max": 78.807
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        }
+      },
+      "name": "closed",
+      "rate": 0.0
+    }
+  ],
+  "saturation_phase": null,
+  "connections": {
+    "attempts": 4,
+    "successes": 4,
+    "success_rate": 1.0,
+    "handshake_latency_ms": {
+      "avg": 21.24,
+      "p50": 20.92,
+      "p95": 21.364,
+      "p99": 21.364,
+      "max": 21.911
+    },
+    "current_connections": 4,
+    "peak_connections": 4,
+    "expected_rejections": {},
+    "errors": {}
+  },
+  "generator": {
+    "event_loop_lag_ms": {
+      "avg": 0.733,
+      "p50": 0.496,
+      "p95": 1.494,
+      "p99": 1.494,
+      "max": 1.79
+    },
+    "cpu_percent_one_core_avg": 5.8,
+    "cpu_percent_one_core_peak": 6.58,
+    "rss_current_bytes": 42496000,
+    "rss_peak_bytes": 42496000,
+    "sample_count": 20,
+    "generator_saturated": false
+  },
+  "harness": {
+    "commit": "7e7075decff83577ccda09c9ffcac528e3a18ba1",
+    "python_version": "3.14.3",
+    "python_implementation": "CPython",
+    "component_versions": {
+      "orjson": "3.12.0",
+      "pycryptodome": "3.23.0",
+      "websockets": "17.1"
+    }
+  },
+  "server": {
+    "commit": "7e7075decff83577ccda09c9ffcac528e3a18ba1",
+    "version": "0.8.0",
+    "protocol_version": 26
+  },
+  "target": {
+    "config_id": "managed-disposable",
+    "environment": "managed-disposable"
+  }
+}

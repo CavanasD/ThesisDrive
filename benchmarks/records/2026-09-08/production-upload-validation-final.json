@@ -1,0 +1,80 @@
+{
+  "mode": "transfers",
+  "started_at": 1788877969.5942497,
+  "repeats": 1,
+  "requests_per_worker": 40,
+  "source_commit": "production CFMS 0.4.0.260701_alpha plus persisted hotfixes; not the integrated 0.8 benchmark source",
+  "results": [
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.09952275082468987,
+      "throughput_mib_s": 10.047953776534053,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 98.78451377153397,
+          "first_response_ms": 98.62891957163811,
+          "sha256_ok": true
+        }
+      ],
+      "business_confirmed_ms": 133.52547585964203
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.05829109996557236,
+      "throughput_mib_s": 17.155277573945522,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 57.68918618559837,
+          "first_response_ms": 43.88348385691643,
+          "sha256_ok": true
+        }
+      ],
+      "server_status_after_readback": [
+        "pending"
+      ]
+    }
+  ],
+  "server": {
+    "server_name": "CFMS WebSocket Server",
+    "version": "0.4.0.260701_alpha",
+    "protocol_version": 15,
+    "lockdown": false,
+    "extension_flags": [
+      "http_transfer",
+      "lab_chain_identity_takeover",
+      "lab_chain_sandbox_breach",
+      "lab_vuln_auth_bypass",
+      "lab_vuln_idor",
+      "lab_vuln_path_traversal",
+      "lab_vuln_rce",
+      "lab_vuln_sqli",
+      "resume_upload",
+      "src_portal",
+      "thesis_attack_lab"
+    ],
+    "capabilities": {
+      "http_transfer": true,
+      "lab_chain_identity_takeover": true,
+      "lab_chain_sandbox_breach": true,
+      "lab_vuln_auth_bypass": true,
+      "lab_vuln_idor": true,
+      "lab_vuln_path_traversal": true,
+      "lab_vuln_rce": true,
+      "lab_vuln_sqli": true,
+      "resume_upload": true,
+      "src_portal": true,
+      "thesis_attack_lab": true,
+      "legacy_websocket_transfer": false
+    }
+  },
+  "fixture_directory_id": "6718f109033e84710e296a824144117f6e19f973175c6a7101a382e135e8555c",
+  "completed_at": 1788877970.6985803
+}

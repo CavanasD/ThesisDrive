@@ -1,0 +1,110 @@
+[
+  {
+    "name": "thesis-drive-security-gateway-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "thesis-drive-security-gateway"
+  },
+  {
+    "name": "thesis-eval-drive-core-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "thesis-eval-core:20260908-final"
+  },
+  {
+    "name": "thesis-eval-security-gateway-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "thesis-eval-gateway:20260908-final"
+  },
+  {
+    "name": "thesis-eval-nginx-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "thesis-eval-nginx:20260908"
+  },
+  {
+    "name": "thesis-eval-grafana-1",
+    "state": "running",
+    "health": null,
+    "image": "grafana/grafana:13.0.2"
+  },
+  {
+    "name": "thesis-eval-prometheus-1",
+    "state": "running",
+    "health": null,
+    "image": "prom/prometheus:v3.12.0"
+  },
+  {
+    "name": "thesis-eval-transfer-data-plane-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "thesis-drive-transfer-data-plane:latest"
+  },
+  {
+    "name": "thesis-eval-redis-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "redis:7.4.9-alpine"
+  },
+  {
+    "name": "thesis-eval-mysql-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "mysql:8.4.10"
+  },
+  {
+    "name": "thesis-eval-minio-1",
+    "state": "running",
+    "health": null,
+    "image": "quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z"
+  },
+  {
+    "name": "thesis-drive-drive-core-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "thesis-drive-drive-core"
+  },
+  {
+    "name": "thesis-drive-nginx-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "thesis-drive-nginx"
+  },
+  {
+    "name": "thesis-drive-mysql-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "mysql:8.4.10"
+  },
+  {
+    "name": "thesis-drive-grafana-1",
+    "state": "running",
+    "health": null,
+    "image": "grafana/grafana:13.0.2"
+  },
+  {
+    "name": "thesis-drive-prometheus-1",
+    "state": "running",
+    "health": null,
+    "image": "prom/prometheus:v3.12.0"
+  },
+  {
+    "name": "thesis-drive-transfer-data-plane-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "thesis-drive-transfer-data-plane"
+  },
+  {
+    "name": "thesis-drive-redis-1",
+    "state": "running",
+    "health": "healthy",
+    "image": "redis:7.4.9-alpine"
+  },
+  {
+    "name": "thesis-drive-minio-1",
+    "state": "running",
+    "health": null,
+    "image": "quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z"
+  }
+]

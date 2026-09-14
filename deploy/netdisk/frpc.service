@@ -1,0 +1,12 @@
+[Unit]
+Description=FRP client for thesis.n1n3bird.top
+After=network-online.target caddy.service
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/frpc -c /etc/frp/frpc.toml
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

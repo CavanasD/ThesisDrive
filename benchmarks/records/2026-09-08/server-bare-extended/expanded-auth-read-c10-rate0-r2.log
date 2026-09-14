@@ -1,0 +1,1 @@
+{"users": 10, "scenario": "auth-read", "policy": "expanded", "responses": {"200": 510}, "generator_health": null}

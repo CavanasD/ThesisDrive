@@ -1,0 +1,98 @@
+name: thesis-drive-ci
+
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@v6
+      - working-directory: cfms_on_websocket-master
+        run: uv sync --extra cluster --extra mysql --extra ext_oidc_sso --extra ext_http_api --extra ext-scheduling-cluster --group dev
+      - working-directory: cfms_on_websocket-master
+        run: uv run pytest -q
+
+  java-services:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [carapace, transfer-data-plane]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - working-directory: ${{ matrix.service }}
+        run: |
+          chmod +x gradlew
+          ./gradlew test bootJar --no-daemon
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: thesis_frontend/package-lock.json
+      - working-directory: thesis_frontend
+        run: npm ci
+      - working-directory: thesis_frontend
+        run: npm test
+      - working-directory: thesis_frontend
+        run: npm run build
+
+  compose-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: cp .env.example .env
+      - name: Validate every experiment profile
+        run: |
+          for profile in hardened baseline course-unprotected unprotected; do
+            docker compose --env-file .env --env-file "profiles/${profile}.env" config --quiet
+          done
+      - name: Validate Prometheus scrape configuration
+        run: |
+          mkdir -p .ci-secrets
+          printf '%s' 'ci-admin-token' > .ci-secrets/carapace-admin-token
+          docker run --rm --entrypoint /bin/promtool \
+            -v "$PWD/infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
+            -v "$PWD/.ci-secrets/carapace-admin-token:/run/metrics-token/carapace-admin-token:ro" \
+            prom/prometheus:v3.12.0 \
+            check config /etc/prometheus/prometheus.yml
+      - name: Validate generated trust material
+        run: |
+          docker compose build core-keygen transfer-keygen
+          docker compose run --rm core-keygen
+          docker compose run --rm --entrypoint openssl core-keygen \
+            x509 -in /tls/cert.pem -noout -checkhost drive-core
+          docker compose run --rm --entrypoint /bin/sh core-keygen -c \
+            'openssl x509 -in /tls/cert.pem -pubkey -noout > /tmp/cert.pub &&
+             openssl pkey -in /tls/key.pem -pubout > /tmp/key.pub &&
+             cmp /tmp/cert.pub /tmp/key.pub &&
+             cmp /tls/cert.pem /ca/cert.pem'
+          docker compose run --rm transfer-keygen
+          docker compose run --rm --entrypoint /bin/sh transfer-keygen -c \
+            'openssl pkey -in /private/private.pem -pubout | cmp - /public/public.pem'

@@ -1,0 +1,12 @@
+Profile: smoke
+Scenario: upload-unique
+Users: 10
+Requests: 214
+Success rate: 21.50%
+Valid outcome rate: 21.50%
+Throughput: 38.447 req/s
+Dropped iterations: 0
+Latency: {'avg': 157.018, 'p50': 3.685, 'p95': 742.968, 'p99': 1350.42, 'max': 1747.325}
+Errors: {'create_document_error': 165, 'upload_error': 3}
+Expected rejections: {}
+Actions: {'cleanup_delete_document': {'requests': 49, 'successes': 45, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {'code_503': 4}, 'error_categories': {'protocol': 4}, 'success_rate': 0.9184, 'valid_outcome_rate': 0.9184, 'throughput_rps': 8.803, 'latency_ms': {'avg': 218.918, 'p50': 205.127, 'p95': 297.138, 'p99': 560.187, 'max': 2005.831}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'cleanup_purge_document': {'requests': 45, 'successes': 42, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {'code_503': 3}, 'error_categories': {'protocol': 3}, 'success_rate': 0.9333, 'valid_outcome_rate': 0.9333, 'throughput_rps': 8.085, 'latency_ms': {'avg': 191.95, 'p50': 226.359, 'p95': 326.676, 'p99': 360.945, 'max': 373.519}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'create_document': {'requests': 214, 'successes': 49, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {'code_503': 165}, 'error_categories': {'protocol': 165}, 'success_rate': 0.229, 'valid_outcome_rate': 0.229, 'throughput_rps': 38.447, 'latency_ms': {'avg': 80.506, 'p50': 3.67, 'p95': 395.571, 'p99': 678.039, 'max': 1124.278}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'login': {'requests': 10, 'successes': 10, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 1.797, 'latency_ms': {'avg': 334.834, 'p50': 332.012, 'p95': 344.138, 'p99': 344.138, 'max': 346.277}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'upload_file': {'requests': 49, 'successes': 46, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {'RuntimeError': 3}, 'error_categories': {'exception': 3}, 'success_rate': 0.9388, 'valid_outcome_rate': 0.9388, 'throughput_rps': 8.803, 'latency_ms': {'avg': 328.673, 'p50': 299.678, 'p95': 695.531, 'p99': 953.491, 'max': 1095.763}, 'transferred_bytes': 385875968, 'bytes_per_second': 69326749.703}}

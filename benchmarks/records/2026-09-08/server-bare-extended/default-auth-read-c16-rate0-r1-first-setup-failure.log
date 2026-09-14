@@ -1,0 +1,27 @@
+Traceback (most recent call last):
+  File "/bench/bare_extended.py", line 82, in <module>
+    result = asyncio.run(load.run_load(args))
+  File "/usr/local/lib/python3.14/asyncio/runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/usr/local/lib/python3.14/asyncio/runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/local/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/bench/worktree/tests/stress/ws_load.py", line 1104, in run_load
+    contexts, setup_stats = await prepare_contexts(
+                            ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/bench/worktree/tests/stress/ws_load.py", line 377, in prepare_contexts
+    await asyncio.gather(
+    ...<5 lines>...
+    )
+  File "/bench/worktree/tests/stress/ws_load.py", line 337, in login_client
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: Load-test authentication failed with response code 503

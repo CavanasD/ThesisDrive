@@ -1,5 +1,15 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import AdminTokenControl from './AdminTokenControl.vue'
+import {
+  AdminApiError,
+  adminFetch,
+  carapaceBaseUrl,
+  downloadAdminFile,
+  getAdminToken,
+  requireAdminResponse,
+  streamAdminSse,
+} from '../services/adminApi'
 
 const emit = defineEmits(['close'])
 
@@ -10,7 +20,7 @@ const props = defineProps({
   inline: { type: Boolean, default: true },
 })
 
-const CARAPACE = import.meta.env.VITE_CARAPACE_URL || 'http://localhost:8080'
+const CARAPACE = carapaceBaseUrl()
 
 // ── Panel animation ───────────────────────────────────────────────────────────
 const visible = ref(false)
@@ -20,6 +30,7 @@ const stats  = ref({ total: 0, blocked: 0, connections: 0 })
 const rules  = ref([])
 const events = ref([])
 const MAX_EVENTS = 500
+const adminStatus = ref(getAdminToken() ? 'connecting' : 'locked')
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 const filterStatus = ref('all')   // 'all' | 'blocked' | 'passed'
@@ -27,7 +38,8 @@ const filterRule   = ref('')      // '' = all rules
 const filterTime   = ref('all')   // 'all' | '1h' | '6h' | '24h' | '7d'
 const filterSearch = ref('')      // free text: IP / action / reason / id
 
-let sse = null
+let sseAbort = null
+let sseRetryTimer = null
 let statsTimer = null
 
 // ── Computed: filtered & sorted events ───────────────────────────────────────
@@ -87,63 +99,129 @@ const blockRate = () => {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(async () => {
   requestAnimationFrame(() => { visible.value = true })
-  await Promise.all([loadStats(), loadRules(), loadEvents()])
-  connectSse()
-  statsTimer = setInterval(loadStats, 5000)
+  await reloadAdminData()
+  statsTimer = setInterval(() => {
+    if (getAdminToken() && adminStatus.value !== 'unauthorized') {
+      loadStats().catch(handleAdminError)
+    }
+  }, 5000)
 })
 
 onBeforeUnmount(() => {
-  sse?.close()
+  stopSse()
   clearInterval(statsTimer)
 })
 
 // ── Data loading ──────────────────────────────────────────────────────────────
-const get = (path) => fetch(`${CARAPACE}/api/waf${path}`).then(r => r.json())
+const handleAdminError = (error) => {
+  adminStatus.value = error instanceof AdminApiError && [401, 403].includes(error.status)
+    ? 'unauthorized'
+    : 'error'
+  if (adminStatus.value === 'unauthorized') stopSse()
+}
 
-const loadStats  = async () => { try { stats.value = await get('/stats') }        catch {} }
-const loadRules  = async () => { try { rules.value = await get('/rules') }        catch {} }
+const get = async (path) => {
+  const response = await adminFetch(`${CARAPACE}/api/waf${path}`)
+  await requireAdminResponse(response)
+  return response.json()
+}
+
+const loadStats = async () => { stats.value = await get('/stats') }
+const loadRules = async () => { rules.value = await get('/rules') }
 const loadEvents = async () => {
-  try {
-    events.value = await get('/events?limit=500')
-  } catch {}
+  events.value = await get('/events?limit=500')
+}
+
+const stopSse = () => {
+  sseAbort?.abort()
+  sseAbort = null
+  clearTimeout(sseRetryTimer)
+  sseRetryTimer = null
+}
+
+const scheduleSseReconnect = () => {
+  if (!getAdminToken() || adminStatus.value === 'unauthorized') return
+  clearTimeout(sseRetryTimer)
+  sseRetryTimer = setTimeout(connectSse, 3000)
 }
 
 const connectSse = () => {
-  sse?.close()
-  sse = new EventSource(`${CARAPACE}/api/waf/events/stream`)
-  // 后端发的是命名事件 "waf-event"，必须用 addEventListener 不能用 onmessage
-  sse.addEventListener('waf-event', (e) => {
-    try {
-      const ev = JSON.parse(e.data)
-      events.value = [ev, ...events.value.slice(0, MAX_EVENTS - 1)]
-    } catch {}
+  sseAbort?.abort()
+  const controller = new AbortController()
+  sseAbort = controller
+  streamAdminSse(`${CARAPACE}/api/waf/events/stream`, {
+    signal: controller.signal,
+    onOpen: () => { adminStatus.value = 'connected' },
+    onEvent: ({ event, data }) => {
+      if (event !== 'waf-event') return
+      try {
+        const parsed = JSON.parse(data)
+        events.value = [parsed, ...events.value.slice(0, MAX_EVENTS - 1)]
+      } catch {
+        // Ignore a malformed event while keeping the authenticated stream open.
+      }
+    },
+  }).then(scheduleSseReconnect).catch((error) => {
+    if (controller.signal.aborted) return
+    handleAdminError(error)
+    scheduleSseReconnect()
   })
-  sse.onerror = () => {
-    sse?.close()
-    // 3秒后自动重连
-    setTimeout(connectSse, 3000)
+}
+
+const reloadAdminData = async () => {
+  stopSse()
+  if (!getAdminToken()) {
+    adminStatus.value = 'locked'
+    return
   }
+  adminStatus.value = 'connecting'
+  try {
+    await Promise.all([loadStats(), loadRules(), loadEvents()])
+    adminStatus.value = 'connected'
+    connectSse()
+  } catch (error) {
+    handleAdminError(error)
+  }
+}
+
+const onAdminTokenChange = (token) => {
+  if (!token) {
+    stopSse()
+    adminStatus.value = 'locked'
+    stats.value = { total: 0, blocked: 0, connections: 0 }
+    rules.value = []
+    events.value = []
+    return
+  }
+  reloadAdminData()
 }
 
 // ── Rule toggle ───────────────────────────────────────────────────────────────
 const toggleRule = async (rule) => {
   const next = !rule.enabled
   try {
-    await fetch(`${CARAPACE}/api/waf/rules/${encodeURIComponent(rule.name)}`, {
+    const response = await adminFetch(`${CARAPACE}/api/waf/rules/${encodeURIComponent(rule.name)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: next }),
     })
+    await requireAdminResponse(response)
     rule.enabled = next
-  } catch {}
+  } catch (error) {
+    handleAdminError(error)
+  }
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
-const exportCsv = () => {
-  const a = document.createElement('a')
-  a.href = `${CARAPACE}/api/waf/events/export`
-  a.download = `waf-${new Date().toISOString().slice(0,10)}.csv`
-  a.click()
+const exportCsv = async () => {
+  try {
+    await downloadAdminFile(
+      `${CARAPACE}/api/waf/events/export`,
+      `waf-${new Date().toISOString().slice(0,10)}.csv`,
+    )
+  } catch (error) {
+    handleAdminError(error)
+  }
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
@@ -187,7 +265,8 @@ const fmtTime = (ts) => {
             <span class="db-title">WAF 安全日志</span>
             <span class="db-sub">Carapace · 实时防护</span>
           </div>
-          <button class="db-btn-ghost" @click="exportCsv">↓ 导出 CSV</button>
+          <AdminTokenControl :status="adminStatus" @change="onAdminTokenChange" />
+          <button class="db-btn-ghost" :disabled="adminStatus !== 'connected'" @click="exportCsv">↓ 导出 CSV</button>
           <button v-if="!props.inline" class="db-close" @click="dismiss">✕</button>
         </div>
 
@@ -441,6 +520,7 @@ const fmtTime = (ts) => {
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .db-btn-ghost:hover { background: var(--btn-ghost-hover); }
+.db-btn-ghost:disabled { opacity: 0.42; cursor: not-allowed; }
 .db-close {
   background: none; border: none; color: var(--muted);
   font-size: 18px; cursor: pointer; padding: 4px 8px;
@@ -557,4 +637,9 @@ const fmtTime = (ts) => {
 .badge-pass   { background: rgba(46, 168, 110, 0.18); color: #2ea86e; }
 
 .ev-empty { text-align: center; color: var(--muted); padding: 48px; font-size: 13px; }
+
+@media (max-width: 860px) {
+  .db-topbar { flex-wrap: wrap; }
+  .db-titles { min-width: 180px; }
+}
 </style>

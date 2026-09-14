@@ -1,0 +1,237 @@
+{
+  "mode": "transfers",
+  "started_at": 1788874589.7238197,
+  "repeats": 3,
+  "requests_per_worker": 40,
+  "source_commit": "ddcfd50 plus thesis integration working tree",
+  "results": [
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.22540519759058952,
+      "business_confirmed_ms": 266.1558501422405,
+      "throughput_mib_s": 4.4364549295634745,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 220.9494411945343,
+          "first_response_ms": 220.7961603999138,
+          "sha256_ok": true
+        }
+      ]
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_seconds": 0.057619936764240265,
+      "business_confirmed_ms": 84.4493918120861,
+      "throughput_mib_s": 17.355104086483724,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 55.612292140722275,
+          "first_response_ms": 40.1231087744236,
+          "sha256_ok": true
+        }
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_seconds": 0.07547040656208992,
+      "business_confirmed_ms": 113.20240795612335,
+      "throughput_mib_s": 13.250226751823504,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 74.95076209306717,
+          "first_response_ms": 74.77729395031929,
+          "sha256_ok": true
+        }
+      ]
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_seconds": 0.03554501011967659,
+      "business_confirmed_ms": 59.604499489068985,
+      "throughput_mib_s": 28.13334407932639,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 34.681327641010284,
+          "first_response_ms": 16.482174396514893,
+          "sha256_ok": true
+        }
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 3,
+      "elapsed_seconds": 0.07041167467832565,
+      "business_confirmed_ms": 104.92942482233047,
+      "throughput_mib_s": 14.202190255642694,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 69.61638107895851,
+          "first_response_ms": 69.46849077939987,
+          "sha256_ok": true
+        }
+      ]
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 1,
+      "repeat": 3,
+      "elapsed_seconds": 0.04019427299499512,
+      "business_confirmed_ms": 65.14600291848183,
+      "throughput_mib_s": 24.879166246507737,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 39.30932655930519,
+          "first_response_ms": 20.465347915887833,
+          "sha256_ok": true
+        }
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 1,
+      "elapsed_seconds": 0.16716938465833664,
+      "business_confirmed_ms": 377.1011754870415,
+      "throughput_mib_s": 23.92782630728265,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 157.17194229364395,
+          "first_response_ms": 157.0747122168541,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 164.96148705482483,
+          "first_response_ms": 164.8235283792019,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 147.31531217694283,
+          "first_response_ms": 147.2105011343956,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 133.0910660326481,
+          "first_response_ms": 132.95815140008926,
+          "sha256_ok": true
+        }
+      ]
+    },
+    {
+      "operation": "download",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 1,
+      "elapsed_seconds": 0.07537735626101494,
+      "business_confirmed_ms": 175.11245608329773,
+      "throughput_mib_s": 53.0663344857691,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 56.86056986451149,
+          "first_response_ms": 34.46543216705322,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 47.13333398103714,
+          "first_response_ms": 29.36233952641487,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 70.07254660129547,
+          "first_response_ms": 40.59693589806557,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 71.98671624064445,
+          "first_response_ms": 43.23253035545349,
+          "sha256_ok": true
+        }
+      ]
+    },
+    {
+      "operation": "upload",
+      "size_mib": 1,
+      "concurrency": 4,
+      "repeat": 2,
+      "elapsed_seconds": 0.11817998439073563,
+      "business_confirmed_ms": 251.82874873280525,
+      "throughput_mib_s": 33.84667903470775,
+      "files": [
+        {
+          "size": 1048576,
+          "completion_ms": 102.479737251997,
+          "first_response_ms": 102.3920550942421,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 116.87667667865753,
+          "first_response_ms": 116.52803793549538,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 85.35400778055191,
+          "first_response_ms": 85.21838113665581,
+          "sha256_ok": true
+        },
+        {
+          "size": 1048576,
+          "completion_ms": 116.76771566271782,
+          "first_response_ms": 116.05966463685036,
+          "sha256_ok": true
+        }
+      ]
+    }
+  ],
+  "server": {
+    "server_name": "CFMS WebSocket Server",
+    "protocol_version": 26,
+    "lockdown": false,
+    "lockdown_reason": null,
+    "extension_flags": [
+      "http_transfer",
+      "resume_upload",
+      "src_portal",
+      "thesis_attack_lab"
+    ],
+    "capabilities": {
+      "http_transfer": true,
+      "resume_upload": true,
+      "src_portal": true,
+      "thesis_attack_lab": true,
+      "legacy_websocket_transfer": false
+    }
+  },
+  "fixture_directory_id": "4beb7134204181a86e748a8787f2175663aec7712d15dd6a887472df54eacd7b",
+  "failure": "TimeoutError: Core completion not confirmed"
+}

@@ -1544,6 +1544,42 @@ button:disabled {
   gap: 10px;
 }
 
+.revision-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.revision-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.revision-item strong,
+.revision-item small {
+  display: block;
+}
+
+.revision-item small,
+.revision-empty {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.revision-empty {
+  padding: 14px 0;
+  text-align: center;
+}
+
 .log-list {
   display: grid;
   gap: 9px;
@@ -2401,6 +2437,161 @@ button:disabled {
 .transfer-status.error {
   color: #e53935;
   font-weight: 600;
+}
+
+/* Share links and the anonymous download landing page */
+.share-landing {
+  width: min(520px, 100%);
+}
+
+.share-landing-badge,
+.share-meta-chip {
+  width: fit-content;
+  padding: 3px 9px;
+  border: 1px solid var(--accent-soft-border);
+  border-radius: 999px;
+  color: var(--brand-dark);
+  background: var(--accent-soft-bg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.share-error,
+.share-success {
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.share-error {
+  color: #9b3030;
+  background: #fff0ee;
+  border: 1px solid #efb8b2;
+}
+
+.share-success {
+  color: #2e6f3e;
+  background: #edf8ef;
+  border: 1px solid #b5dcbf;
+}
+
+.share-modal-card {
+  width: min(680px, calc(100vw - 28px));
+  max-height: min(760px, calc(100vh - 36px));
+  overflow-y: auto;
+}
+
+.share-create-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.share-create-grid > button {
+  grid-column: 1 / -1;
+}
+
+.share-list-head,
+.share-status-row,
+.share-list-item,
+.share-list-actions {
+  display: flex;
+  align-items: center;
+}
+
+.share-list-head,
+.share-list-item {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.share-list-head h4 {
+  margin: 0;
+}
+
+.share-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share-list-item,
+.share-list-empty {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.share-list-main {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.share-status-row,
+.share-list-actions {
+  gap: 6px;
+}
+
+.share-list-actions {
+  flex: 0 0 auto;
+}
+
+.share-list-actions button {
+  padding: 6px 9px;
+  font-size: 12px;
+}
+
+.share-list-empty {
+  color: var(--muted);
+  text-align: center;
+}
+
+.page.theme-dark .share-error {
+  color: #ffc5bf;
+  background: #3a2524;
+  border-color: #6a4745;
+}
+
+.page.theme-dark .share-success {
+  color: #a9ddb4;
+  background: #1f3829;
+  border-color: #38654a;
+}
+
+@media (max-width: 720px) {
+  .share-create-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .share-list-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.transfer-status.paused {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.transfer-action {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .transfer-bar-track {

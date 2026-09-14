@@ -1,0 +1,8 @@
+Uninstalled 1 package in 6ms
+Installed 1 package in 24ms
+test_intermediate_204_and_final_201_are_both_accepted (benchmarks.tests.test_system_evaluation.UploadResponseTest.test_intermediate_204_and_final_201_are_both_accepted) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.601s
+
+OK
