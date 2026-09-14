@@ -1,0 +1,39 @@
+{
+  "date": "2026-09-08",
+  "upstream_commit": "a0041424e5b184f701fa7250c2f1535caa30afc7",
+  "integration_commit": "ddcfd5012b4ce23cb2215be2f00eaa3e13157b15",
+  "working_files_sha256": {
+    "cfms_on_websocket-master/src/include/domains/transfers/consumer.py": "f8e426e398f34ce38593cfe5dab0fafbbd52b32e0f59329dc314d340d5f1521f",
+    "cfms_on_websocket-master/src/include/transport/router.py": "6349a431d376b79d85bc0cb241d2334edb00a4aeb4f5701fc7064eae2f8e34bb",
+    "benchmarks/system_evaluation.py": "8050becb7f827df9a9447e6d524cad6da5e391bb1fbfb50127e652533e2b552a",
+    "benchmarks/bare_matrix.py": "eb1eac237cf9b1db59be33b67b1ada6c102094b958047c9622569dd224e5d6d6",
+    "infra/core/render_config.py": "13a43e4bd973f9e5f0e81b6a5f3458ede984f99273e98f786003350bf548bc85",
+    "benchmarks/summarize_evaluation.py": "f25de78509dc50994a21e148e238b720da2cac1bbbb8a79e67787cf8a2369a4a",
+    "carapace/src/main/java/com/thesis/carapace/defender/rules/WafPayloads.java": "cb47685f7db717363dff36d2466120053c2fb3c77d1680e2e6038f3c4ebefa70"
+  },
+  "bare_archive_sha256": "9a185a0bf5725ccb585f121cdececd8d277e28711d3aab0c15e3a85db4135cf5",
+  "local_platform": "Windows-11-10.0.26200-SP0",
+  "measurement_notes": [
+    "Native harness: 5 second windows, 3 repetitions; SQLite/local storage, same-process CPU budget for server and client in Linux container.",
+    "Integrated controls: sequential connection establishment outside measured interval; 5 warm-up requests, 40 measured requests per worker, 3 repeats.",
+    "Full transfers: random bytes, 8 MiB chunks, SHA-256, independent upload tasks.",
+    "Linux host shared with production; server bare and formal integrated runs serialized.",
+    "Native payload repeats a digest; do not infer speedup ratios against random-byte HTTP payloads."
+  ],
+  "core_regression": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "2",
+    "tests": "453",
+    "time": "49.179",
+    "timestamp": "2026-09-08T21:44:29.028316+08:00",
+    "hostname": "DESKTOP-245NROC"
+  },
+  "server_bare_source_note": "Remote repository imported from the unmodified a004142 git archive; imported Git commit differs but archive SHA-256 records provenance.",
+  "gateway_regression": {
+    "tests": 18,
+    "failures": 0
+  },
+  "production_validation_note": "Production is CFMS 0.4/protocol15 with consumer, task timestamp precision and gateway hotfixes. Production probe is excluded from formal performance matrices."
+}

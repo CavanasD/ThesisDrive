@@ -1,0 +1,189 @@
+{
+  "schema_version": 2,
+  "profile": "smoke",
+  "scenario": "server-info",
+  "users": 10,
+  "elapsed_seconds": 5.037,
+  "requests": 726,
+  "successes": 505,
+  "expected_rejection_count": 0,
+  "expected_rejections": {},
+  "errors": {
+    "code_503": 221
+  },
+  "error_categories": {
+    "protocol": 221
+  },
+  "success_rate": 0.6956,
+  "valid_outcome_rate": 0.6956,
+  "throughput_rps": 144.134,
+  "latency_ms": {
+    "avg": 69.289,
+    "p50": 68.627,
+    "p95": 98.714,
+    "p99": 119.459,
+    "max": 153.464
+  },
+  "transferred_bytes": 0,
+  "bytes_per_second": 0.0,
+  "dropped_iterations": 0,
+  "actions": {
+    "server_info": {
+      "requests": 726,
+      "successes": 505,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {
+        "code_503": 221
+      },
+      "error_categories": {
+        "protocol": 221
+      },
+      "success_rate": 0.6956,
+      "valid_outcome_rate": 0.6956,
+      "throughput_rps": 144.134,
+      "latency_ms": {
+        "avg": 69.289,
+        "p50": 68.627,
+        "p95": 98.714,
+        "p99": 119.459,
+        "max": 153.464
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    }
+  },
+  "started_at": "2026-09-08T13:40:38.303554+00:00",
+  "finished_at": "2026-09-08T13:40:43.341657+00:00",
+  "random_seed": 20260908,
+  "parameters": {
+    "scenario": "server-info",
+    "users": 10,
+    "duration_seconds": 5.0,
+    "ramp_up_seconds": 0.0,
+    "arrival_pattern": "closed",
+    "rate": 0.0,
+    "stage_rates": [],
+    "spike_rate": null,
+    "spike_start_seconds": null,
+    "spike_duration_seconds": null,
+    "inflight_per_user": 1,
+    "payload_size_bytes": 1048576,
+    "file_size_group": "1MiB-to-16MiB",
+    "action_weights": {},
+    "random_seed": 20260908,
+    "account_pool_size": 1,
+    "cleanup": "per-iteration-best-effort",
+    "target_config_id": "managed-disposable",
+    "target_environment": "managed-disposable"
+  },
+  "phases": [
+    {
+      "scenario": "server-info",
+      "users": 10,
+      "elapsed_seconds": 5.036,
+      "requests": 726,
+      "successes": 505,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {
+        "code_503": 221
+      },
+      "error_categories": {
+        "protocol": 221
+      },
+      "success_rate": 0.6956,
+      "valid_outcome_rate": 0.6956,
+      "throughput_rps": 144.158,
+      "latency_ms": {
+        "avg": 69.289,
+        "p50": 68.627,
+        "p95": 98.714,
+        "p99": 119.459,
+        "max": 153.464
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0,
+      "dropped_iterations": 0,
+      "actions": {
+        "server_info": {
+          "requests": 726,
+          "successes": 505,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {
+            "code_503": 221
+          },
+          "error_categories": {
+            "protocol": 221
+          },
+          "success_rate": 0.6956,
+          "valid_outcome_rate": 0.6956,
+          "throughput_rps": 144.158,
+          "latency_ms": {
+            "avg": 69.289,
+            "p50": 68.627,
+            "p95": 98.714,
+            "p99": 119.459,
+            "max": 153.464
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        }
+      },
+      "name": "closed",
+      "rate": 0.0
+    }
+  ],
+  "saturation_phase": null,
+  "connections": {
+    "attempts": 10,
+    "successes": 10,
+    "success_rate": 1.0,
+    "handshake_latency_ms": {
+      "avg": 35.638,
+      "p50": 35.549,
+      "p95": 37.101,
+      "p99": 37.101,
+      "max": 37.106
+    },
+    "current_connections": 10,
+    "peak_connections": 10,
+    "expected_rejections": {},
+    "errors": {}
+  },
+  "generator": {
+    "event_loop_lag_ms": {
+      "avg": 0.842,
+      "p50": 0.88,
+      "p95": 1.188,
+      "p99": 1.188,
+      "max": 1.764
+    },
+    "cpu_percent_one_core_avg": 7.66,
+    "cpu_percent_one_core_peak": 8.81,
+    "rss_current_bytes": 44126208,
+    "rss_peak_bytes": 44126208,
+    "sample_count": 20,
+    "generator_saturated": false
+  },
+  "harness": {
+    "commit": "7e7075decff83577ccda09c9ffcac528e3a18ba1",
+    "python_version": "3.14.3",
+    "python_implementation": "CPython",
+    "component_versions": {
+      "orjson": "3.12.0",
+      "pycryptodome": "3.23.0",
+      "websockets": "17.1"
+    }
+  },
+  "server": {
+    "commit": "7e7075decff83577ccda09c9ffcac528e3a18ba1",
+    "version": "0.8.0",
+    "protocol_version": 26
+  },
+  "target": {
+    "config_id": "managed-disposable",
+    "environment": "managed-disposable"
+  }
+}

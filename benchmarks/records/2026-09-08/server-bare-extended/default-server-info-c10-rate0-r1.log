@@ -1,0 +1,1 @@
+{"users": 10, "scenario": "server-info", "policy": "default", "responses": {"200": 1944, "503:server_concurrency": 865}, "generator_health": null}

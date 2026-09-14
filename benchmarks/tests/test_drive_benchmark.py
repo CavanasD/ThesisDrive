@@ -80,6 +80,10 @@ class FakeTransferHandler(BaseHTTPRequestHandler):
             digest = hashlib.sha256(STATE.uploaded).hexdigest()
 
         if completed:
+            if self.path == "/wrong-digest":
+                digest = "0" * 64
+            if self.path == "/missing-digest":
+                digest = ""
             payload = json.dumps({"status": "completed", "sha256": digest}).encode()
             self.send_response(201)
             self.send_header("Content-Type", "application/json")
@@ -97,6 +101,13 @@ class FakeTransferHandler(BaseHTTPRequestHandler):
         if not self._authorized():
             return
         range_header = self.headers.get("Range", "")
+        if not range_header and not STATE.content:
+            with STATE.lock:
+                STATE.get_ranges.append(range_header)
+            self.send_response(200)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         match = re.fullmatch(r"bytes=(\d+)-(\d+)", range_header)
         if not match:
             self.send_error(400)
@@ -252,6 +263,31 @@ class DriveBenchmarkTests(unittest.TestCase):
         self.assertGreater(percentile([1, 2, 3, 4], 0.95), 3)
         with self.assertRaises(ValueError):
             DataPlaneClient(chunk_size=MAX_CHUNK_SIZE + 1)
+
+    def test_upload_requires_matching_server_digest_even_with_manifest(self) -> None:
+        for endpoint in ("wrong-digest", "missing-digest"):
+            with self.subTest(endpoint=endpoint):
+                STATE.reset(self.content)
+                session = Session(
+                    "upload", "upload", f"{self.base_url}/{endpoint}",
+                    "test-ticket", self.file, self.sha256, len(self.content),
+                )
+                result = DataPlaneClient(chunk_size=4096, timeout=5).upload(session)
+                self.assertFalse(result.success)
+                self.assertIn("SHA-256", result.error)
+
+    def test_empty_download_makes_an_authenticated_request(self) -> None:
+        self.file.write_bytes(b"")
+        STATE.reset(b"")
+        for ticket, succeeds in (("invalid-ticket", False), ("test-ticket", True)):
+            with self.subTest(ticket=ticket):
+                session = Session(
+                    "empty", "download", f"{self.base_url}/empty", ticket,
+                    self.file, hashlib.sha256(b"").hexdigest(), 0,
+                )
+                result = DataPlaneClient(timeout=5).download(session)
+                self.assertEqual(result.success, succeeds, result.error)
+        self.assertEqual(STATE.get_ranges, [""])
 
 
 if __name__ == "__main__":

@@ -222,10 +222,11 @@ class DataPlaneClient:
             if actual_digest != expected_digest:
                 raise RuntimeError("local SHA-256 changed during upload")
             server_digest = str(final_payload.get("sha256") or "").lower()
-            verification_digest = session.expected_sha256 or server_digest
-            if not verification_digest:
-                raise RuntimeError("upload response/session did not provide SHA-256 for verification")
-            if verification_digest != actual_digest:
+            if not server_digest:
+                raise RuntimeError("upload response did not provide SHA-256 for verification")
+            if server_digest != actual_digest or (
+                session.expected_sha256 and session.expected_sha256 != actual_digest
+            ):
                 raise RuntimeError("upload SHA-256 verification failed")
             completed = time.perf_counter()
             return OperationResult(
@@ -259,6 +260,16 @@ class DataPlaneClient:
         offset = 0
 
         try:
+            if expected_size == 0:
+                request = urllib.request.Request(
+                    session.url, headers=self._headers(session), method="GET",
+                )
+                with self._open(request) as response:
+                    first_byte_at = time.perf_counter()
+                    if response.status != 200:
+                        raise RuntimeError(f"empty download returned HTTP {response.status}, expected 200")
+                    if response.read(1):
+                        raise RuntimeError("empty download returned a non-empty body")
             while offset < expected_size:
                 end = min(offset + self.chunk_size, expected_size) - 1
                 headers = self._headers(session)

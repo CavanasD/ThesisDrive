@@ -1,0 +1,12 @@
+Profile: smoke
+Scenario: server-info
+Users: 1
+Requests: 969
+Success rate: 100.00%
+Valid outcome rate: 100.00%
+Throughput: 193.767 req/s
+Dropped iterations: 0
+Latency: {'avg': 5.147, 'p50': 4.917, 'p95': 7.075, 'p99': 8.225, 'max': 12.471}
+Errors: {}
+Expected rejections: {}
+Actions: {'server_info': {'requests': 969, 'successes': 969, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 193.767, 'latency_ms': {'avg': 5.147, 'p50': 4.917, 'p95': 7.075, 'p99': 8.225, 'max': 12.471}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}}

@@ -1,0 +1,11 @@
+{
+  "source": "actual MySQL temporary table probe before schema change",
+  "input": 1788877840.662578,
+  "float_readback": 1788880000.0,
+  "double_readback": 1788877840.662578,
+  "readback_difference_seconds": 2159.3374218940735,
+  "production_columns_before": {
+    "start_time": "FLOAT",
+    "end_time": "FLOAT"
+  }
+}

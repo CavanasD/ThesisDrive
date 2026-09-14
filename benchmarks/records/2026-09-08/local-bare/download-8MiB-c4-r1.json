@@ -1,0 +1,459 @@
+{
+  "schema_version": 2,
+  "profile": "smoke",
+  "scenario": "download",
+  "users": 4,
+  "elapsed_seconds": 5.534,
+  "requests": 20,
+  "successes": 17,
+  "expected_rejection_count": 0,
+  "expected_rejections": {},
+  "errors": {
+    "download_error": 3
+  },
+  "error_categories": {
+    "scenario": 3
+  },
+  "success_rate": 0.85,
+  "valid_outcome_rate": 0.85,
+  "throughput_rps": 3.614,
+  "latency_ms": {
+    "avg": 888.162,
+    "p50": 947.335,
+    "p95": 1147.528,
+    "p99": 1147.528,
+    "max": 1298.405
+  },
+  "transferred_bytes": 142606336,
+  "bytes_per_second": 25767024.303,
+  "dropped_iterations": 0,
+  "actions": {
+    "cleanup_delete_document": {
+      "requests": 20,
+      "successes": 20,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 3.614,
+      "latency_ms": {
+        "avg": 60.719,
+        "p50": 54.968,
+        "p95": 91.081,
+        "p99": 91.081,
+        "max": 125.505
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "cleanup_purge_document": {
+      "requests": 20,
+      "successes": 20,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 3.614,
+      "latency_ms": {
+        "avg": 82.779,
+        "p50": 77.306,
+        "p95": 140.388,
+        "p99": 140.388,
+        "max": 144.896
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "create_document": {
+      "requests": 20,
+      "successes": 20,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 3.614,
+      "latency_ms": {
+        "avg": 90.237,
+        "p50": 88.536,
+        "p95": 139.606,
+        "p99": 139.606,
+        "max": 177.267
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "download_file": {
+      "requests": 20,
+      "successes": 17,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {
+        "RuntimeError": 3
+      },
+      "error_categories": {
+        "exception": 3
+      },
+      "success_rate": 0.85,
+      "valid_outcome_rate": 0.85,
+      "throughput_rps": 3.614,
+      "latency_ms": {
+        "avg": 500.819,
+        "p50": 543.939,
+        "p95": 696.157,
+        "p99": 696.157,
+        "max": 945.184
+      },
+      "transferred_bytes": 142606336,
+      "bytes_per_second": 25767024.303
+    },
+    "get_revision": {
+      "requests": 20,
+      "successes": 20,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 3.614,
+      "latency_ms": {
+        "avg": 66.989,
+        "p50": 64.105,
+        "p95": 92.855,
+        "p99": 92.855,
+        "max": 102.536
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "list_revisions": {
+      "requests": 20,
+      "successes": 20,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 3.614,
+      "latency_ms": {
+        "avg": 56.159,
+        "p50": 58.207,
+        "p95": 79.125,
+        "p99": 79.125,
+        "max": 80.764
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "login": {
+      "requests": 4,
+      "successes": 4,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 0.723,
+      "latency_ms": {
+        "avg": 118.48,
+        "p50": 118.56,
+        "p95": 119.885,
+        "p99": 119.885,
+        "max": 122.179
+      },
+      "transferred_bytes": 0,
+      "bytes_per_second": 0.0
+    },
+    "upload_file": {
+      "requests": 20,
+      "successes": 20,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {},
+      "error_categories": {},
+      "success_rate": 1.0,
+      "valid_outcome_rate": 1.0,
+      "throughput_rps": 3.614,
+      "latency_ms": {
+        "avg": 172.519,
+        "p50": 175.312,
+        "p95": 263.839,
+        "p99": 263.839,
+        "max": 265.941
+      },
+      "transferred_bytes": 167772160,
+      "bytes_per_second": 30314146.239
+    }
+  },
+  "started_at": "2026-09-08T13:42:28.159251+00:00",
+  "finished_at": "2026-09-08T13:42:33.695938+00:00",
+  "random_seed": 20260908,
+  "parameters": {
+    "scenario": "download",
+    "users": 4,
+    "duration_seconds": 5.0,
+    "ramp_up_seconds": 0.0,
+    "arrival_pattern": "closed",
+    "rate": 0.0,
+    "stage_rates": [],
+    "spike_rate": null,
+    "spike_start_seconds": null,
+    "spike_duration_seconds": null,
+    "inflight_per_user": 1,
+    "payload_size_bytes": 8388608,
+    "file_size_group": "1MiB-to-16MiB",
+    "action_weights": {},
+    "random_seed": 20260908,
+    "account_pool_size": 1,
+    "cleanup": "per-iteration-best-effort",
+    "target_config_id": "managed-disposable",
+    "target_environment": "managed-disposable"
+  },
+  "phases": [
+    {
+      "scenario": "download",
+      "users": 4,
+      "elapsed_seconds": 5.534,
+      "requests": 20,
+      "successes": 17,
+      "expected_rejection_count": 0,
+      "expected_rejections": {},
+      "errors": {
+        "download_error": 3
+      },
+      "error_categories": {
+        "scenario": 3
+      },
+      "success_rate": 0.85,
+      "valid_outcome_rate": 0.85,
+      "throughput_rps": 3.614,
+      "latency_ms": {
+        "avg": 888.162,
+        "p50": 947.335,
+        "p95": 1147.528,
+        "p99": 1147.528,
+        "max": 1298.405
+      },
+      "transferred_bytes": 142606336,
+      "bytes_per_second": 25768233.924,
+      "dropped_iterations": 0,
+      "actions": {
+        "cleanup_delete_document": {
+          "requests": 20,
+          "successes": 20,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 3.614,
+          "latency_ms": {
+            "avg": 60.719,
+            "p50": 54.968,
+            "p95": 91.081,
+            "p99": 91.081,
+            "max": 125.505
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        },
+        "cleanup_purge_document": {
+          "requests": 20,
+          "successes": 20,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 3.614,
+          "latency_ms": {
+            "avg": 82.779,
+            "p50": 77.306,
+            "p95": 140.388,
+            "p99": 140.388,
+            "max": 144.896
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        },
+        "create_document": {
+          "requests": 20,
+          "successes": 20,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 3.614,
+          "latency_ms": {
+            "avg": 90.237,
+            "p50": 88.536,
+            "p95": 139.606,
+            "p99": 139.606,
+            "max": 177.267
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        },
+        "download_file": {
+          "requests": 20,
+          "successes": 17,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {
+            "RuntimeError": 3
+          },
+          "error_categories": {
+            "exception": 3
+          },
+          "success_rate": 0.85,
+          "valid_outcome_rate": 0.85,
+          "throughput_rps": 3.614,
+          "latency_ms": {
+            "avg": 500.819,
+            "p50": 543.939,
+            "p95": 696.157,
+            "p99": 696.157,
+            "max": 945.184
+          },
+          "transferred_bytes": 142606336,
+          "bytes_per_second": 25768233.924
+        },
+        "get_revision": {
+          "requests": 20,
+          "successes": 20,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 3.614,
+          "latency_ms": {
+            "avg": 66.989,
+            "p50": 64.105,
+            "p95": 92.855,
+            "p99": 92.855,
+            "max": 102.536
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        },
+        "list_revisions": {
+          "requests": 20,
+          "successes": 20,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 3.614,
+          "latency_ms": {
+            "avg": 56.159,
+            "p50": 58.207,
+            "p95": 79.125,
+            "p99": 79.125,
+            "max": 80.764
+          },
+          "transferred_bytes": 0,
+          "bytes_per_second": 0.0
+        },
+        "upload_file": {
+          "requests": 20,
+          "successes": 20,
+          "expected_rejection_count": 0,
+          "expected_rejections": {},
+          "errors": {},
+          "error_categories": {},
+          "success_rate": 1.0,
+          "valid_outcome_rate": 1.0,
+          "throughput_rps": 3.614,
+          "latency_ms": {
+            "avg": 172.519,
+            "p50": 175.312,
+            "p95": 263.839,
+            "p99": 263.839,
+            "max": 265.941
+          },
+          "transferred_bytes": 167772160,
+          "bytes_per_second": 30315569.323
+        }
+      },
+      "name": "closed",
+      "rate": 0.0
+    }
+  ],
+  "saturation_phase": null,
+  "connections": {
+    "attempts": 4,
+    "successes": 4,
+    "success_rate": 1.0,
+    "handshake_latency_ms": {
+      "avg": 18.353,
+      "p50": 18.482,
+      "p95": 18.644,
+      "p99": 18.644,
+      "max": 19.186
+    },
+    "current_connections": 4,
+    "peak_connections": 4,
+    "expected_rejections": {},
+    "errors": {}
+  },
+  "generator": {
+    "event_loop_lag_ms": {
+      "avg": 4.817,
+      "p50": 4.126,
+      "p95": 7.791,
+      "p99": 12.742,
+      "max": 15.616
+    },
+    "cpu_percent_one_core_avg": 53.25,
+    "cpu_percent_one_core_peak": 112.87,
+    "rss_current_bytes": 51978240,
+    "rss_peak_bytes": 90652672,
+    "sample_count": 22,
+    "generator_saturated": true
+  },
+  "harness": {
+    "commit": "a0041424e5b184f701fa7250c2f1535caa30afc7",
+    "python_version": "3.14.7",
+    "python_implementation": "CPython",
+    "component_versions": {
+      "orjson": "3.12.0",
+      "pycryptodome": "3.23.0",
+      "websockets": "17.1"
+    }
+  },
+  "server": {
+    "commit": "a0041424e5b184f701fa7250c2f1535caa30afc7",
+    "version": "0.8.0",
+    "protocol_version": 26,
+    "python_version": "3.14.7",
+    "component_versions": {
+      "apscheduler": "3.11.3",
+      "cryptography": "50.0.1",
+      "orjson": "3.12.0",
+      "pluggy": "1.6.0",
+      "pydantic": "2.13.5",
+      "sqlalchemy": "2.0.52",
+      "websockets": "17.1"
+    }
+  },
+  "target": {
+    "config_id": "managed-disposable",
+    "environment": "managed-disposable"
+  }
+}

@@ -1,0 +1,35 @@
+\documentclass{ctexart}
+\usepackage{amsmath}
+\begin{document}
+\section*{实测指标定义}
+\subsection*{成功请求吞吐}
+\begin{equation}
+Q = \frac{\sum_{r=1}^{R} N_{\mathrm{ok},r}}{\sum_{r=1}^{R} T_r}\tag{3-1}
+\end{equation}
+式（3-1）中，Nok,r为第r轮正式测量阶段成功完成的请求数，Tr为该轮实际墙钟时长，单位为秒；Q的单位为请求/秒。多轮样本先合并成功数和时间再相除，不直接平均各轮请求速率。503、其他错误响应和超时不进入成功数。并发请求共享同一轮时间，不能把每个连接的耗时相加作为分母。原生文件表若统计完整业务迭代，采用相同形式，但单位明确写为成功迭代/秒。
+\subsection*{成功文件的聚合字节吞吐}
+\begin{equation}
+B = \frac{\sum_{r=1}^{R} V_{\mathrm{ok},r}}{2^{20}\sum_{r=1}^{R} T_{\mathrm{byte},r}}\tag{3-2}
+\end{equation}
+式（3-2）中，Vok,r是第r轮所有成功文件的总字节数；Tbyte,r从该并发批次开始执行传输计时，到该批次文件传输与摘要核对全部返回为止，单位为秒。除以2²⁰将字节换算为MiB，故B的单位为MiB/s。同一批次各文件的字节数相加，时间只计一次。该指标包含脚本、HTTP/TLS和摘要校验的开销，不是网卡线速；上传后继续等待Core确认的时间另由式（3-6）记录。
+\subsection*{正式测量阶段的失败率}
+\begin{equation}
+E = \frac{\sum_{r=1}^{R}N_{\mathrm{attempt},r}-\sum_{r=1}^{R}N_{\mathrm{ok},r}}{\sum_{r=1}^{R}N_{\mathrm{attempt},r}}\times100\%\tag{3-3}
+\end{equation}
+式（3-3）中，Nattempt,r为第r轮实际发出的测量请求总数，成功数与式（3-1）一致；E以百分数表示。准入拒绝、业务错误和超时都属于未成功结果，必须保留在分母中。尚未进入正式计时就发生的建连或认证准备失败单列记录；计划发送但压测器未实际发出的迭代另报dropped\_iterations，不能伪装成已完成请求。文件表使用完整业务迭代或逻辑文件作为统计单位，并在表题或说明中明确。
+\subsection*{完整入口相对直连的平均时延变化}
+\begin{equation}
+\Delta_L = \frac{\overline{L}_{\mathrm{full}}-\overline{L}_{\mathrm{direct}}}{\overline{L}_{\mathrm{direct}}}\times100\%\tag{3-4}
+\end{equation}
+式（3-4）中，L̄full和L̄direct分别为同一动作、同一并发级别下，完整HTTPS入口与Core直连的成功请求平均时延，两者使用相同单位。ΔL为正表示完整入口平均更慢，为负表示本次样本平均更快。该量只描述所测两条路径的相对变化；失败率必须同时给出。共享主机、数据库累积记录和其他组件活动会影响结果，因此不能把全部差值归因于网关本身。
+\subsection*{单个文件的传输完成时间}
+\begin{equation}
+L_{\mathrm{file},i}=10^3\left(t_{\mathrm{verified},i}-t_{\mathrm{start},i}\right)\tag{3-5}
+\end{equation}
+式（3-5）中，tstart,i为文件i进入传输函数的计时点，tverified,i为该文件传输与摘要核对结束的计时点，两者单位为秒；乘以10³后，Lfile,i的单位为毫秒。上传核对服务端返回的整文件摘要，下载在客户端计算并比对SHA-256。表中的平均完成时间是成功文件Lfile,i的算术平均值，既不是整个并发批次时间，也不含后续Core确认等待；票据准备和测试文件生成在计时前完成。
+\subsection*{并发上传批次的业务确认时间}
+\begin{equation}
+T_{\mathrm{biz},r}=10^3\left(t_{\mathrm{all\mbox{-}confirmed},r}-t_{\mathrm{batch\mbox{-}start},r}\right)\tag{3-6}
+\end{equation}
+式（3-6）中，tbatch-start,r在第r轮并发传输线程池开始执行前记录；tall-confirmed,r在该轮全部上传任务均经Core状态查询确认completed后记录，两者单位为秒。Tbiz,r以毫秒表示，包含批次启动、文件传输、摘要核对以及业务确认轮询等待。当前脚本逐个查询本轮任务，因此它是批次级可观察确认时间，不能写成单个文件的首次字节到数据库提交耗时。只有数据面完成与Core确认同时成立，才认定上传链路验证通过。
+\end{document}

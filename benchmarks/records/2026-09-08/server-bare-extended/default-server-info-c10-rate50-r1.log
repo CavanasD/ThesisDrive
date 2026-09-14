@@ -1,0 +1,1 @@
+{"users": 10, "scenario": "server-info", "policy": "default", "responses": {"200": 1000}, "generator_health": null}

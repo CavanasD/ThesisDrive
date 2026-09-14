@@ -1,0 +1,27 @@
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running stamp_revision  -> 7d83baf2c941
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 7d83baf2c941 -> e75aa3e7b56e, add src reports and 200 mib quota
+INFO  [alembic.runtime.migration] Running upgrade e75aa3e7b56e -> 1d91f5fdcc8b, bridge thesis schema to upstream 0.8 baseline
+INFO  [alembic.runtime.migration] Running upgrade 1d91f5fdcc8b -> fe8863687aa4, enforce node name uniqueness
+INFO  [alembic.runtime.migration] Running upgrade fe8863687aa4 -> b4b3061f385c, grant server diagnostics permission
+INFO  [alembic.runtime.migration] Running upgrade b4b3061f385c -> 76f1c7621e23, add user block reasons
+C:\Users\N1n3Bird\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:148: SAWarning: Skipped unsupported reflection of expression-based index ix_nodes_status_lower_name_id
+  next(self.gen)
+C:\Users\N1n3Bird\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:148: SAWarning: Skipped unsupported reflection of expression-based index ix_nodes_parent_status_lower_name_id
+  next(self.gen)
+INFO  [alembic.runtime.migration] Running upgrade 76f1c7621e23 -> f239d439f893, index permission entry expiry
+INFO  [alembic.runtime.migration] Running upgrade f239d439f893 -> 170e0a16133e, make node namespace compatible with mysql
+INFO  [alembic.runtime.migration] Running upgrade 170e0a16133e -> 7bddfba0d8aa, preserve float precision across databases
+INFO  [alembic.runtime.migration] Running upgrade 7bddfba0d8aa -> ab7efda19079, add scheduling infrastructure
+INFO  [alembic.runtime.migration] Running upgrade ab7efda19079 -> 8c130010a943, grant scheduling permissions
+INFO  [alembic.runtime.migration] Running upgrade 8c130010a943 -> 39084f380eaa, add system-managed schedules
+INFO  [alembic.runtime.migration] Running upgrade 39084f380eaa -> adc1283fb393, add scheduling redis namespace
+INFO  [alembic.runtime.migration] Running upgrade adc1283fb393 -> 6dba0956fa9d, add scheduling dispatch timestamps
+INFO  [alembic.runtime.migration] Running upgrade 6dba0956fa9d -> 3c496a214a87, snapshot scheduled execution contracts
+INFO  [alembic.runtime.migration] Running upgrade 3c496a214a87 -> 0460356a5ba6, index document revision lookups
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+upgrade_ok 0460356a5ba6 preserved_row_counts {'users': 1, 'files': 12, 'documents': 39, 'folders': 41, 'share_links': 1}

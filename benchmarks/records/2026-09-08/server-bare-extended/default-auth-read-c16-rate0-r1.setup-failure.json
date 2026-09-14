@@ -1,0 +1,1 @@
+{"policy": "default", "scenario": "auth-read", "users": 16, "rate": 0, "repeat": 1, "exit_code": 1, "note": "Run did not reach a completed measured phase; see paired log. Excluded from measured throughput."}

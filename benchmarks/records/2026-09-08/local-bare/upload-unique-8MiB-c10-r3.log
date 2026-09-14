@@ -1,0 +1,12 @@
+Profile: smoke
+Scenario: upload-unique
+Users: 10
+Requests: 72
+Success rate: 66.67%
+Valid outcome rate: 66.67%
+Throughput: 12.688 req/s
+Dropped iterations: 0
+Latency: {'avg': 490.595, 'p50': 473.625, 'p95': 1274.264, 'p99': 1891.285, 'max': 2160.575}
+Errors: {'create_document_error': 24}
+Expected rejections: {}
+Actions: {'cleanup_delete_document': {'requests': 48, 'successes': 46, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {'code_503': 2}, 'error_categories': {'protocol': 2}, 'success_rate': 0.9583, 'valid_outcome_rate': 0.9583, 'throughput_rps': 8.459, 'latency_ms': {'avg': 230.633, 'p50': 198.45, 'p95': 402.855, 'p99': 651.449, 'max': 1272.142}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'cleanup_purge_document': {'requests': 46, 'successes': 40, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {'code_503': 6}, 'error_categories': {'protocol': 6}, 'success_rate': 0.8696, 'valid_outcome_rate': 0.8696, 'throughput_rps': 8.106, 'latency_ms': {'avg': 167.244, 'p50': 161.68, 'p95': 362.346, 'p99': 450.971, 'max': 457.254}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'create_document': {'requests': 72, 'successes': 48, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {'code_503': 24}, 'error_categories': {'protocol': 24}, 'success_rate': 0.6667, 'valid_outcome_rate': 0.6667, 'throughput_rps': 12.688, 'latency_ms': {'avg': 191.495, 'p50': 182.689, 'p95': 498.047, 'p99': 917.97, 'max': 957.463}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'login': {'requests': 10, 'successes': 10, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 1.762, 'latency_ms': {'avg': 252.953, 'p50': 255.859, 'p95': 258.942, 'p99': 258.942, 'max': 262.814}, 'transferred_bytes': 0, 'bytes_per_second': 0.0}, 'upload_file': {'requests': 48, 'successes': 48, 'expected_rejection_count': 0, 'expected_rejections': {}, 'errors': {}, 'error_categories': {}, 'success_rate': 1.0, 'valid_outcome_rate': 1.0, 'throughput_rps': 8.459, 'latency_ms': {'avg': 443.289, 'p50': 314.636, 'p95': 1317.022, 'p99': 1636.983, 'max': 1701.652}, 'transferred_bytes': 402653184, 'bytes_per_second': 70956295.268}}
