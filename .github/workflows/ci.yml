@@ -20,7 +20,7 @@ jobs:
           python-version: "3.14"
       - uses: astral-sh/setup-uv@v6
       - working-directory: cfms_on_websocket-master
-        run: uv sync --extra cluster --extra mysql --extra ext_oidc_sso --group dev
+        run: uv sync --extra cluster --extra mysql --extra ext_oidc_sso --extra ext_http_api --extra ext-scheduling-cluster --group dev
       - working-directory: cfms_on_websocket-master
         run: uv run pytest -q
 
@@ -39,7 +39,9 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
       - working-directory: ${{ matrix.service }}
-        run: ./gradlew test bootJar --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew test bootJar --no-daemon
 
   frontend:
     runs-on: ubuntu-latest
