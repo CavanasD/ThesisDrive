@@ -158,6 +158,22 @@ services:
       CFMS_VULN_AUTH_BYPASS_ENABLED: ${CFMS_VULN_AUTH_BYPASS_ENABLED:-false}
       CFMS_VULN_PATH_TRAVERSAL_ENABLED: ${CFMS_VULN_PATH_TRAVERSAL_ENABLED:-false}
       CFMS_VULN_IDOR_ENABLED: ${CFMS_VULN_IDOR_ENABLED:-false}
+      # 教学关卡 · 链 3：热插件上传 → 覆写 → RCE
+      CFMS_VULN_HOT_PLUGIN_ENABLED: ${CFMS_VULN_HOT_PLUGIN_ENABLED:-false}
+      # 运行期模式：real=真实可利用，simulate=沙箱假执行
+      CFMS_VULN_SQLI_MODE: ${CFMS_VULN_SQLI_MODE:-real}
+      CFMS_VULN_AUTH_BYPASS_MODE: ${CFMS_VULN_AUTH_BYPASS_MODE:-real}
+      CFMS_VULN_HOT_PLUGIN_MODE: ${CFMS_VULN_HOT_PLUGIN_MODE:-real}
+      # 教学关卡 · 链 4：业务面 ORDER BY 注入（文件列表按时间排序）
+      CFMS_VULN_LISTING_SORT_ENABLED: ${CFMS_VULN_LISTING_SORT_ENABLED:-false}
+      CFMS_VULN_LISTING_SORT_MODE: ${CFMS_VULN_LISTING_SORT_MODE:-real}
+      # Teaching level 5: JWT weak HMAC secret (secret123). Off = hardened.
+      CFMS_VULN_JWT_WEAK_SECRET_ENABLED: ${CFMS_VULN_JWT_WEAK_SECRET_ENABLED:-false}
+      # Teaching switch: LAB_RCE_REAL=true makes lab_rce really execute a
+      # shell command inside drive-core instead of returning a fixed string.
+      LAB_RCE_REAL: ${LAB_RCE_REAL:-true}
+      LAB_RCE_TIMEOUT: ${LAB_RCE_TIMEOUT:-5}
+      LAB_RCE_MAX_OUTPUT: ${LAB_RCE_MAX_OUTPUT:-65536}
     volumes:
       - core-state:/app/state
       - core-content:/app/src/content
@@ -241,6 +257,23 @@ services:
       VULN_JWT_ALG_NONE_ENABLED: ${VULN_JWT_ALG_NONE_ENABLED:-false}
       VULN_CORS_ENABLED: ${VULN_CORS_ENABLED:-false}
       VULN_LOG4SHELL_ENABLED: ${VULN_LOG4SHELL_ENABLED:-false}
+      # ── Log4Shell 教学态 · 插拔开关 ─────────────────────────────
+      # JDK 21 起 com.sun.jndi.ldap.object.trustURLCodebase 默认为 false：
+      # 网关仍会完成 JNDI 查询与 LDAP 回连，但拒绝加载远程类
+      # → 仅能验证注入点，不能 RCE。
+      #
+      # 设 LOG4SHELL_TRUST_CODEBASE=true 时，向 JVM 注入
+      #   -Dcom.sun.jndi.ldap.object.trustURLCodebase=true
+      # 该关卡随即变为真实 RCE —— 仅限隔离靶场，禁止用于生产。
+      #
+      # 取值为 false / 0 / no / 空 / 未定义 时不注入任何 JVM 参数，
+      # 保持 JDK 21 默认（安全态）。归一化在 .env 侧完成，见 LOG4SHELL_TRUST_CODEBASE。
+      # 只认字面 true：.env 里的 LOG4SHELL_TRUST_CODEBASE 经
+      # LOG4SHELL_TRUST_CODEBASE_ARMED 归一化（见 scripts/log4shell_switch.sh）。
+      # 直接写 false 也不会误开 —— 见 scripts/README。
+      JAVA_TOOL_OPTIONS: >-
+        ${LOG4SHELL_TRUST_CODEBASE_ARMED:+-Dcom.sun.jndi.ldap.object.trustURLCodebase=true}
+      LOG4SHELL_TRUST_CODEBASE_ARMED: ${LOG4SHELL_TRUST_CODEBASE_ARMED:-}
       WAF_SQLI_ENABLED: ${WAF_SQLI_ENABLED:-true}
       WAF_XSS_ENABLED: ${WAF_XSS_ENABLED:-true}
       WAF_PATH_TRAVERSAL_ENABLED: ${WAF_PATH_TRAVERSAL_ENABLED:-true}

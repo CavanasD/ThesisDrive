@@ -6,20 +6,42 @@ const props = defineProps({
   auth: { type: Object, required: true },
 })
 
+// 与后端 thesis_attack_lab/_extension.py 的 FEATURE_ENV 保持一致。
+// 新增漏洞点时，这里与后端必须同步，否则面板会漏显示开关。
 const FEATURE_META = {
-  sqli: { label: 'SQL 注入', short: '枚举' },
-  rce: { label: '命令注入', short: '执行' },
-  auth_bypass: { label: '认证绕过', short: '绕过' },
-  path_traversal: { label: '路径穿越', short: '穿越' },
-  idor: { label: 'IDOR', short: '越权' },
+  sqli: { label: 'SQL 注入', short: '注入' },
+  jwt_weak_secret: { label: 'JWT 弱密钥', short: '伪造' },
+  listing_sort: { label: '文件列表排序注入', short: '业务面' },
 }
 
+// 与后端 EXERCISE_FEATURES 保持一致。feature 字段决定该步是否受某开关控制。
 const EXERCISE_META = {
-  enumerate: { label: '账号枚举', feature: 'sqli' },
-  bypass: { label: '认证绕过', feature: 'auth_bypass' },
-  idor: { label: '对象越权', feature: 'idor' },
-  traverse: { label: '路径穿越', feature: 'path_traversal' },
-  execute: { label: '命令执行', feature: 'rce' },
+  // 第 1 条 —— 文件列表「按时间排序」注入
+  sqli_probe: { label: '① 确认参数可控（合法值）', feature: 'sqli' },
+  sqli_inject: { label: '② 确认注入位置（拼接子查询）', feature: 'sqli' },
+  sqli_exfil: { label: '③ 报错带外读取版本', feature: 'sqli' },
+  // 第 2 条 —— JWT 弱 HMAC 密钥 → 伪造 admin
+  jwt_forge: { label: '① 用 secret123 自签 admin 令牌', feature: 'jwt_weak_secret' },
+  jwt_admin_login: { label: '② 拿令牌调业务接口验证身份', feature: 'jwt_weak_secret' },
+  // 第 3 条 —— 业务面 ORDER BY 注入
+  listing_probe: { label: '① 文件列表按时间排序（合法）', feature: 'listing_sort' },
+  listing_inject: { label: '② 排序字段拼接子查询', feature: 'listing_sort' },
+  listing_exfil: { label: '③ 报错带外读取数据库版本', feature: 'listing_sort' },
+}
+
+// 重点链的展示顺序与副标题（与 require.txt 的两条重点链对应）。
+const FOCUS_CHAIN_ORDER = ['sqli_chain', 'jwt_admin_chain', 'listing_orderby_chain']
+const FOCUS_CHAIN_NOTE = {
+  sqli_chain: '业务面 · 文件列表排序直接注入数据库',
+  jwt_admin_chain: '重点 · 弱 HMAC 密钥伪造管理员身份',
+  listing_orderby_chain: '业务面 · 普通用户点文件列表排序即可触发',
+}
+
+// 已下线的链：后端漏洞点已移除，面板以绿色「已修复」置灰呈现。
+const FIXED_CHAIN_META = {
+  identity_takeover: { title: 'Identity Takeover', reason: '依赖的 lab_* 桩动作已下线' },
+  sandbox_breach: { title: 'Sandbox Breach', reason: '依赖的 lab_* 桩动作已下线' },
+  hot_plugin_chain: { title: 'Hot Plugin Chain', reason: '依赖的 lab_* 桩动作已下线' },
 }
 
 const status = ref(null)
@@ -30,8 +52,33 @@ const lastStep = ref(null)
 const chainEvidence = ref({})
 
 const enabledFeatures = computed(() => new Set(status.value?.enabled_features || []))
-const chains = computed(() => status.value?.chains || [])
+// 重点链排在最前，其余保持后端返回顺序，避免学生翻找。
+const chains = computed(() => {
+  const all = status.value?.chains || []
+  const rank = (id) => {
+    const i = FOCUS_CHAIN_ORDER.indexOf(id)
+    return i === -1 ? FOCUS_CHAIN_ORDER.length : i
+  }
+  return [...all].sort((a, b) => rank(a.id) - rank(b.id))
+})
+const focusChains = computed(() => chains.value.filter((c) => FOCUS_CHAIN_ORDER.includes(c.id)))
+const otherChains = computed(() => chains.value.filter((c) => !FOCUS_CHAIN_ORDER.includes(c.id)))
+const focusEnabledCount = computed(
+  () => focusChains.value.filter((c) => c.available).length,
+)
 const exercises = computed(() => status.value?.available_exercises || Object.keys(EXERCISE_META))
+
+const isFocusChain = (id) => FOCUS_CHAIN_ORDER.includes(id)
+const focusNote = (id) => FOCUS_CHAIN_NOTE[id] || ''
+// 已下线链（后端漏洞点已移除），面板置灰 + 绿色「已修复」标记。
+const isFixedChain = (chain) => chain?.status === 'fixed' || !!FIXED_CHAIN_META[chain?.id]
+// 列出该链当前缺失的开关，便于蓝方一键定位要打开哪个漏洞点。
+const missingFeatures = (chain) => {
+  const needed = new Set(
+    (chain.steps || []).map((step) => EXERCISE_META[step]?.feature).filter(Boolean),
+  )
+  return [...needed].filter((feature) => !enabledFeatures.value.has(feature))
+}
 
 const request = async (action, data = {}) => {
   const response = await props.client.request(action, data, props.auth)
@@ -178,19 +225,43 @@ onMounted(load)
       <section class="lab-section">
         <div class="section-heading">
           <h4>已编排流程</h4>
-          <span>{{ chains.length }} 条</span>
+          <span>{{ chains.length }} 条 · 重点链 {{ focusEnabledCount }}/{{ focusChains.length }} 就绪</span>
         </div>
         <div class="chain-list">
-          <article v-for="chain in chains" :key="chain.id" class="chain-card" :class="{ unavailable: !chain.available }">
+          <article
+            v-for="chain in chains"
+            :key="chain.id"
+            class="chain-card"
+            :class="{
+              unavailable: !chain.available,
+              focus: isFocusChain(chain.id),
+              fixed: isFixedChain(chain),
+            }"
+          >
             <div class="chain-title-row">
               <div><strong>{{ chain.title }}</strong><small>{{ chain.id }}</small></div>
-              <span class="chain-status">{{ chain.available ? '可演练' : '缺少漏洞开关' }}</span>
+              <span class="chain-status" :class="{ fixed: isFixedChain(chain) }">
+                {{ isFixedChain(chain) ? '已修复' : (chain.available ? '可推进' : '缺少漏洞开关') }}
+              </span>
             </div>
-            <ol class="step-list">
+            <p v-if="focusNote(chain.id)" class="chain-note">{{ focusNote(chain.id) }}</p>
+            <p v-if="isFixedChain(chain)" class="chain-note fixed-note">
+              {{ chain.fixed_reason || FIXED_CHAIN_META[chain.id]?.reason }}
+            </p>
+            <ol v-if="chain.steps.length" class="step-list">
               <li v-for="step in chain.steps" :key="step">{{ EXERCISE_META[step]?.label || step }}</li>
             </ol>
-            <button class="lab-button secondary" :disabled="!chain.available" @click="advanceChain(chain)">
-              推进下一步
+            <p v-else class="chain-note">该教学链的步骤已随漏洞点一并下线。</p>
+            <p v-if="!chain.available && !isFixedChain(chain)" class="chain-hint">
+              需开启：
+              <code v-for="f in missingFeatures(chain)" :key="f">{{ FEATURE_META[f]?.label || f }}</code>
+            </p>
+            <button
+              class="lab-button secondary"
+              :disabled="!chain.available || isFixedChain(chain)"
+              @click="advanceChain(chain)"
+            >
+              {{ isFixedChain(chain) ? '已修复 · 不可推进' : '推进下一步' }}
             </button>
           </article>
         </div>
@@ -227,6 +298,13 @@ input { min-width: 0; border: 1px solid var(--line); border-radius: 9px; backgro
 .chain-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 10px; }
 .chain-card { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
 .chain-card.unavailable { opacity: .68; }
+.chain-card.focus { border-color: rgba(217, 70, 70, .45); background: rgba(217, 70, 70, .05); }
+.chain-card.fixed { border-color: rgba(32, 136, 92, .45); background: rgba(32, 136, 92, .06); opacity: .85; }
+.chain-status.fixed { color: #20885c; font-weight: 700; }
+.fixed-note { color: #20885c; }
+.chain-note { margin: 0; color: var(--muted); font-size: 12px; }
+.chain-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; color: #d94646; font-size: 12px; }
+.chain-hint code { padding: 2px 6px; border-radius: 6px; background: rgba(217, 70, 70, .12); font-size: 11px; }
 .chain-title-row strong { display: block; }
 .chain-title-row small { display: block; margin-top: 2px; font-family: monospace; }
 .chain-status { font-size: 11px; color: var(--muted); white-space: nowrap; }
