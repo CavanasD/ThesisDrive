@@ -45,3 +45,28 @@ Report/
 docs/
 AGENTS.md
 .gitignore
+
+# ── transfer-data-plane（SpringBoot / Gradle）──────────
+transfer-data-plane/.gradle/
+transfer-data-plane/build/
+transfer-data-plane/out/
+transfer-data-plane/**/*.class
+
+# ── 部署 / 配置备份（含时间戳的临时副本，勿入库）─────────
+.deploy_backup_*/
+*.bak
+*.bak.*
+*.bak2_*
+*.bak_*
+compose.yaml.bak*
+_extension.py.bak*
+
+# ── 本地证据与笔记（含靶机情报，勿入库）─────────────────
+burp.md
+burp.md.bak*
+EVIDENCE-*.md
+
+# ── 杂项 ───────────────────────────────────────────────
+*.log
+*.tmp
+transfer-data-plane/**/build/
