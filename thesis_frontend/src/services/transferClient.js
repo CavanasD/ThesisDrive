@@ -414,7 +414,9 @@ export class TransferClient {
         const payload = await jsonOrNull(response)
         if (!COMPLETE_UPLOAD_STATUSES.has(response.status)) {
           const error = new Error(payload?.message || `上传分块失败: HTTP ${response.status}`)
-          error.retryable = response.status === 429 || response.status >= 500
+          error.retryable = response.status === 429
+            || response.status >= 500
+            || (response.status === 409 && payload?.code === 'transfer_busy')
           throw error
         }
         return parseOffset(response, payload, endExclusive)

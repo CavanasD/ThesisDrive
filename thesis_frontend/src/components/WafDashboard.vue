@@ -29,6 +29,8 @@ const visible = ref(false)
 const stats  = ref({ total: 0, blocked: 0, connections: 0 })
 const rules  = ref([])
 const events = ref([])
+const bulkUpdating = ref(false)
+const selectedEvent = ref(null)
 const MAX_EVENTS = 500
 const adminStatus = ref(getAdminToken() ? 'connecting' : 'locked')
 
@@ -52,6 +54,7 @@ const filteredEvents = computed(() => {
   return events.value.filter(ev => {
     if (filterStatus.value === 'blocked' && !ev.blocked) return false
     if (filterStatus.value === 'passed'  &&  ev.blocked) return false
+    if (filterStatus.value === 'honeypot' && ev.ruleName !== 'Honeypot Trigger') return false
     if (filterRule.value && ev.ruleName !== filterRule.value) return false
     if (since && new Date(ev.timestamp).getTime() < since) return false
     if (q && ![ev.clientIp, ev.action, ev.reason, ev.encryptedId, ev.defenseType]
@@ -90,6 +93,7 @@ const goToPage = (p) => {
 }
 
 const ruleNames = computed(() => [...new Set(events.value.map(e => e.ruleName).filter(Boolean))])
+const honeypotCount = computed(() => events.value.filter(e => e.ruleName === 'Honeypot Trigger').length)
 
 const blockRate = () => {
   if (!stats.value.total) return '0.0'
@@ -212,6 +216,23 @@ const toggleRule = async (rule) => {
   }
 }
 
+const toggleAllRules = async (enabled) => {
+  bulkUpdating.value = true
+  try {
+    const response = await adminFetch(`${CARAPACE}/api/waf/rules`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    })
+    await requireAdminResponse(response)
+    rules.value = await response.json()
+  } catch (error) {
+    handleAdminError(error)
+  } finally {
+    bulkUpdating.value = false
+  }
+}
+
 // ── Export ────────────────────────────────────────────────────────────────────
 const exportCsv = async () => {
   try {
@@ -262,8 +283,8 @@ const fmtTime = (ts) => {
         <div class="db-topbar">
           <span class="db-logo">⛨</span>
           <div class="db-titles">
-            <span class="db-title">WAF 安全日志</span>
-            <span class="db-sub">Carapace · 实时防护</span>
+            <span class="db-title">WAF 与蜜罐检测平台</span>
+            <span class="db-sub">Carapace · 实时防护与诱饵告警</span>
           </div>
           <AdminTokenControl :status="adminStatus" @change="onAdminTokenChange" />
           <button class="db-btn-ghost" :disabled="adminStatus !== 'connected'" @click="exportCsv">↓ 导出 CSV</button>
@@ -289,14 +310,18 @@ const fmtTime = (ts) => {
             <div class="stat-label">在线连接</div>
           </div>
           <div class="stat-card muted">
-            <div class="stat-num">{{ filteredEvents.length }}</div>
-            <div class="stat-label">当前筛选</div>
+            <div class="stat-num">{{ honeypotCount }}</div>
+            <div class="stat-label">蜜罐触发</div>
           </div>
         </div>
 
         <!-- 规则开关 -->
         <div class="db-rules-bar">
           <span class="db-bar-label">防护规则</span>
+          <div class="db-bulk-actions">
+            <button class="db-btn-ghost bulk-on" :disabled="adminStatus !== 'connected' || bulkUpdating" @click="toggleAllRules(true)">一键开启</button>
+            <button class="db-btn-ghost" :disabled="adminStatus !== 'connected' || bulkUpdating" @click="toggleAllRules(false)">一键关闭</button>
+          </div>
           <div class="db-rules">
             <button
               v-for="rule in rules"
@@ -318,6 +343,7 @@ const fmtTime = (ts) => {
             <option value="all">全部状态</option>
             <option value="blocked">仅拦截</option>
             <option value="passed">仅通过</option>
+            <option value="honeypot">仅蜜罐触发</option>
           </select>
           <select v-model="filterRule" class="db-select">
             <option value="">全部规则</option>
@@ -352,7 +378,11 @@ const fmtTime = (ts) => {
               <tr
                 v-for="ev in pagedEvents"
                 :key="ev.id"
-                :class="{ 'row-blocked': ev.blocked }"
+                :class="{ 'row-blocked': ev.blocked, 'row-clickable': true }"
+                tabindex="0"
+                title="点击查看请求发包详情"
+                @click="selectedEvent = ev"
+                @keydown.enter="selectedEvent = ev"
               >
                 <td class="col-id">{{ ev.encryptedId }}</td>
                 <td class="col-time">{{ fmtTime(ev.timestamp) }}</td>
@@ -391,6 +421,31 @@ const fmtTime = (ts) => {
             <button class="db-btn-ghost" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">›</button>
             <button class="db-btn-ghost" :disabled="currentPage >= totalPages" @click="goToPage(totalPages)">»</button>
           </div>
+        </div>
+
+        <div v-if="selectedEvent" class="detail-backdrop" @click.self="selectedEvent = null">
+          <section class="detail-card" role="dialog" aria-modal="true" aria-label="WAF 请求详情">
+            <header class="detail-header">
+              <div>
+                <strong>请求发包详情</strong>
+                <span>{{ selectedEvent.encryptedId }}</span>
+              </div>
+              <button class="db-close" aria-label="关闭详情" @click="selectedEvent = null">✕</button>
+            </header>
+            <dl class="detail-grid">
+              <div><dt>时间</dt><dd>{{ fmtTime(selectedEvent.timestamp) }}</dd></div>
+              <div><dt>来源 IP</dt><dd>{{ selectedEvent.clientIp }}</dd></div>
+              <div><dt>操作</dt><dd>{{ selectedEvent.action }}</dd></div>
+              <div><dt>规则</dt><dd>{{ selectedEvent.ruleName || '未命中规则' }}</dd></div>
+              <div><dt>检测类型</dt><dd>{{ selectedEvent.defenseType || '-' }}</dd></div>
+              <div><dt>处置</dt><dd>{{ selectedEvent.blocked ? '已拦截' : '已通过' }}</dd></div>
+            </dl>
+            <div class="detail-reason"><span>检测原因</span>{{ selectedEvent.reason || '-' }}</div>
+            <div class="detail-packet">
+              <div class="detail-packet-title">脱敏请求内容</div>
+              <pre>{{ selectedEvent.requestPreview || '该历史事件未保存请求详情；新产生的事件将显示脱敏发包内容。' }}</pre>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -561,6 +616,9 @@ const fmtTime = (ts) => {
 }
 .db-bar-label { font-size: 11px; color: var(--muted); letter-spacing: 0.07em; min-width: 56px; }
 .db-rules { display: flex; flex-wrap: wrap; gap: 6px; }
+.db-bulk-actions { display: flex; gap: 5px; }
+.db-bulk-actions .db-btn-ghost { padding: 4px 9px; }
+.db-bulk-actions .bulk-on { border-color: rgba(46, 168, 110, 0.55); color: #2ea86e; }
 .rule-chip {
   display: flex; align-items: center; gap: 5px;
   background: var(--btn-ghost); border: 1px solid var(--line);
@@ -622,6 +680,8 @@ const fmtTime = (ts) => {
   white-space: nowrap; vertical-align: middle;
 }
 .row-blocked td { background: rgba(227, 65, 65, 0.06); }
+.row-clickable { cursor: pointer; }
+.row-clickable:focus { outline: 2px solid var(--brand); outline-offset: -2px; }
 .db-table tbody tr:hover td { background: var(--btn-ghost); }
 .row-blocked:hover td { background: rgba(227, 65, 65, 0.12) !important; }
 
@@ -638,8 +698,34 @@ const fmtTime = (ts) => {
 
 .ev-empty { text-align: center; color: var(--muted); padding: 48px; font-size: 13px; }
 
+.detail-backdrop {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; background: rgba(9, 18, 35, 0.58);
+}
+.db-panel { position: relative; }
+.detail-card {
+  width: min(760px, 96%); max-height: 86%; overflow: auto;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); color: var(--text);
+  box-shadow: 0 24px 70px rgba(0,0,0,.35); padding: 18px;
+}
+.detail-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.detail-header div { display: flex; align-items: baseline; gap: 10px; }
+.detail-header strong { color: #e34141; font-size: 16px; }
+.detail-header span { color: var(--muted); font: 12px monospace; }
+.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+.detail-grid div { padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); min-width: 0; }
+.detail-grid dt, .detail-reason span, .detail-packet-title { color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+.detail-grid dd { margin: 0; overflow-wrap: anywhere; font: 12px monospace; }
+.detail-reason { padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; }
+.detail-reason span { display: block; }
+.detail-packet { margin-top: 12px; }
+.detail-packet pre { margin: 6px 0 0; padding: 14px; max-height: 320px; overflow: auto; border-radius: 8px; background: #111827; color: #d7e3f4; font: 12px/1.55 monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+
 @media (max-width: 860px) {
   .db-topbar { flex-wrap: wrap; }
   .db-titles { min-width: 180px; }
+  .detail-grid { grid-template-columns: 1fr; }
 }
 </style>

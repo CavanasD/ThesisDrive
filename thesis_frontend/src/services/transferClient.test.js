@@ -107,6 +107,24 @@ describe('TransferClient', () => {
       .toBe(fetchImpl.mock.calls[1][1].headers['Idempotency-Key'])
   })
 
+  it('retries a temporary transfer lock conflict', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        code: 'transfer_busy',
+        message: 'Another request is currently updating this transfer',
+      }), { status: 409, headers: { 'Content-Type': 'application/json' } }))
+      .mockResolvedValueOnce(response(201, 3, { status: 'completed' }))
+    const client = new TransferClient({
+      controlClient: controlClient(),
+      fetchImpl,
+      store: new MemoryTransferStore(),
+      retryBaseMs: 1,
+    })
+
+    await client.uploadFile('task-busy', makeFile('abc'))
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
   it('waits for Core pending/running states before reporting business completion', async () => {
     const control = controlClient({
       statuses: [{ status: 'pending' }, { status: 'running' }, { status: 'completed' }],

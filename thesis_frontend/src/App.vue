@@ -87,6 +87,8 @@ const fileQuery = ref('')
 const fileCategory = ref('all')
 const fileSortKey = ref('title')
 const fileSortOrder = ref('asc')
+// 教学关卡 · 链 4 的诊断信息（服务端拼接的 SQL / 数据库报错），仅实验模式下会填充。
+const lastSortDiagnostic = ref(null)
 const filePage = ref(1)
 const filePageSize = ref(8)
 
@@ -272,8 +274,8 @@ const filteredFiles = computed(() => {
   const order = fileSortOrder.value === 'asc' ? 1 : -1
   list.sort((a, b) => {
     if (fileSortKey.value === 'size') return (Number(a.size || 0) - Number(b.size || 0)) * order
-    if (fileSortKey.value === 'last_modified') return (Number(a.last_modified || 0) - Number(b.last_modified || 0)) * order
-    return String(a.title || '').localeCompare(String(b.title || '')) * order
+    if (fileSortKey.value === 'created_time') return (Number(a.created_time || 0) - Number(b.created_time || 0)) * order
+    return String(a.title || a.name || '').localeCompare(String(b.title || b.name || '')) * order
   })
   return list
 })
@@ -458,11 +460,32 @@ const refreshRootStats = async () => {
 }
 
 const loadFileList = async (folderId = null) => {
-  const response = await callAction('list_directory', { folder_id: folderId }, true)
+  // 教学关卡 · 链 4：把排序方式作为参数发给服务端。
+  // 服务端在漏洞开关关闭时按白名单处理（安全），开启时才直接拼入 ORDER BY。
+  // 无论开关状态，响应契约（folders/documents）都保持一致，前端无需分支。
+  const payload = { folder_id: folderId }
+  if (fileSortKey.value) payload.sort_by = fileSortKey.value
+  if (fileSortOrder.value) payload.sort_order = fileSortOrder.value
+
+  const response = await callAction('list_directory', payload, true)
   drive.folders = response.data.folders || []
   drive.files = response.data.documents || []
   parentFolderId.value = response.data.parent_id || null
   currentFolderId.value = folderId
+
+  // 教学信号：服务端回显了拼接后的 SQL / 数据库报错，说明排序参数走到了注入路径。
+  const diag = response.data
+  if (diag && diag.vulnerability === 'listing_sort' && diag.order_source === 'raw') {
+    lastSortDiagnostic.value = {
+      sortBy: diag.sort_by,
+      sql: diag.sql,
+      injectable: diag.injectable,
+      count: diag.count,
+    }
+  } else {
+    lastSortDiagnostic.value = null
+  }
+
   // Refresh recent files at the user's root without treating direct children
   // as the complete (recursive) quota usage.
   const isAtDriveRoot = folderId === (session.homeDirectoryId || null)
@@ -470,6 +493,19 @@ const loadFileList = async (folderId = null) => {
     drive.recentFiles = pickRecentByModified(drive.files, 20)
   }
   filePage.value = 1
+}
+
+// 排序方式变化时重新向服务端取数（而不是只在前端重排）。
+const applyServerSort = async () => {
+  try {
+    await loadFileList(currentFolderId.value)
+  } catch (error) {
+    // 教学场景：注入 payload 触发数据库报错时，把服务端回显展示出来而不是静默失败。
+    const message = String(error?.message || error)
+    if (/XPATH|SQL|syntax|column|order clause/i.test(message)) {
+      lastSortDiagnostic.value = { sortBy: fileSortKey.value, sql: '', error: message }
+    }
+  }
 }
 
 const refreshCurrentFolderAndQuota = async () => {
@@ -1883,12 +1919,12 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="sort-controls">
                   <input v-model="fileQuery" type="text" placeholder="快速筛选" class="quick-filter" @input="filePage = 1" />
-                  <select v-model="fileSortKey" @change="filePage = 1">
-                    <option value="title">名称</option>
+                  <select v-model="fileSortKey" @change="applyServerSort">
+                    <option value="name">名称</option>
                     <option value="size">大小</option>
-                    <option value="last_modified">时间</option>
+                    <option value="created_time">时间</option>
                   </select>
-                  <button class="ghost sort-dir-btn" @click="fileSortOrder = fileSortOrder === 'asc' ? 'desc' : 'asc'" :title="fileSortOrder === 'asc' ? '升序' : '降序'">{{ fileSortOrder === 'asc' ? '↑' : '↓' }}</button>
+                  <button class="ghost sort-dir-btn" @click="fileSortOrder = fileSortOrder === 'asc' ? 'desc' : 'asc'; applyServerSort()" :title="fileSortOrder === 'asc' ? '升序' : '降序'">{{ fileSortOrder === 'asc' ? '↑' : '↓' }}</button>
                 </div>
               </div>
 
